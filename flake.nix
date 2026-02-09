@@ -31,23 +31,18 @@
           pkg-config
           libc
         ];
+        base_rust_pkgs = pkgs.rust-bin.stable."${rustVersion}".default.override {
+          extensions = [
+            "rust-src"
+            "rust-analyzer"
+          ];
+        };
+        base_pkgs = default_pkgs ++ [ base_rust_pkgs ];
       in
       {
-        devShells.default =
-          let
-            rustpkgs = pkgs.rust-bin.stable."${rustVersion}".default.override {
-              extensions = [
-                "rust-src"
-                "rust-analyzer"
-              ];
-            };
-          in
-          pkgs.mkShell {
-            packages = [
-              rustpkgs
-            ]
-            ++ default_pkgs;
-          };
+        devShells.default = pkgs.mkShell {
+          packages = base_pkgs;
+        };
         devShells."stable" =
           let
             rustpkgs = pkgs.rust-bin.stable.latest.default.override {
@@ -62,6 +57,30 @@
               rustpkgs
             ]
             ++ default_pkgs;
+          };
+        packages.default =
+          let
+            rustpkgs = base_rust_pkgs;
+            rustPlatform = pkgs.makeRustPlatform {
+              cargo = rustpkgs;
+              rustc = rustpkgs;
+            };
+          in
+          rustPlatform.buildRustPackage {
+            pname = cargoToml.package.name;
+            version = cargoToml.package.version;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+            nativeBuildInputs = [
+              pkgs.pkg-config
+              pkgs.cmake
+            ];
+            dontUseCmakeConfigure = true;
+            buildInputs = [
+              pkgs.protobuf
+              pkgs.curl
+              pkgs.libc
+            ];
           };
       }
     );
