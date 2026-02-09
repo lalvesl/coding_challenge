@@ -25,20 +25,21 @@
           inherit system overlays;
         };
         cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-        rustVersion = cargoToml.workspace.package.rust-version;
+        rustVersion = cargoToml.package.rust-version;
         default_pkgs = with pkgs; [
           cmake
           pkg-config
-          protobuf
-          curl
-          ninja
+          libc
         ];
       in
       {
         devShells.default =
           let
-            rustpkgs = pkgs.rust-bin.stable.latest.default.override {
-              extensions = [ "rust-src" "rust-analyzer" ];
+            rustpkgs = pkgs.rust-bin.stable."${rustVersion}".default.override {
+              extensions = [
+                "rust-src"
+                "rust-analyzer"
+              ];
             };
           in
           pkgs.mkShell {
@@ -47,10 +48,13 @@
             ]
             ++ default_pkgs;
           };
-        devShells."rust_minimum_version" =
+        devShells."stable" =
           let
-            rustpkgs = pkgs.rust-bin.stable."${rustVersion}.0".default.override {
-              extensions = [ "rust-src" "rust-analyzer" ];
+            rustpkgs = pkgs.rust-bin.stable.latest.default.override {
+              extensions = [
+                "rust-src"
+                "rust-analyzer"
+              ];
             };
           in
           pkgs.mkShell {
