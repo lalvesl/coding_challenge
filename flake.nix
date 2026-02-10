@@ -30,6 +30,7 @@
           cmake
           pkg-config
           libc
+          coreutils
         ];
         base_rust_pkgs = pkgs.rust-bin.stable."${rustVersion}".default.override {
           extensions = [
