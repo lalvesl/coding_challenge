@@ -13,22 +13,18 @@ pub fn process_checksum<W: Write>(path: &Path, writer: &mut W) -> Result<()> {
 }
 
 fn process_checksum_internal<R: Read, W: Write>(
-    reader: R,
+    mut reader: R,
     path_display: &str,
     mut writer: W,
 ) -> Result<()> {
-    let checksum = compute_checksum_from_reader(reader)?;
-    writeln!(writer, "{}  {}", checksum, path_display)?;
-    Ok(())
-}
-
-fn compute_checksum_from_reader<R: Read>(mut reader: R) -> Result<String> {
-    let mut writer = HashWriter {
+    let mut buffer = HashWriter {
         hasher: Sha256::new(),
     };
-    io::copy(&mut reader, &mut writer)?;
-    let result = writer.hasher.finalize();
-    Ok(hex::encode(result))
+    io::copy(&mut reader, &mut buffer)?;
+    let result = buffer.hasher.finalize();
+    let checksum = hex::encode(result);
+    writeln!(writer, "{}  {}", &checksum, path_display)?;
+    Ok(())
 }
 
 struct HashWriter {

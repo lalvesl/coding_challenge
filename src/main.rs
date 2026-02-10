@@ -6,5 +6,6 @@ mod ops_parse;
 mod runner;
 
 fn main() -> Result<()> {
-    runner::run()
+    let mut stdout = std::io::stdout();
+    runner::run(std::env::args(), &mut stdout)
 }

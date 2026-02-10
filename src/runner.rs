@@ -4,14 +4,9 @@ use crate::ops_parse::process_parse;
 use anyhow::{Context, Result};
 use clap::Parser;
 use std::ffi::OsString;
-use std::io::{self, Write};
+use std::io::Write;
 
-pub fn run() -> Result<()> {
-    let mut stdout = io::stdout();
-    run_inner(std::env::args(), &mut stdout)
-}
-
-pub fn run_inner<I, T, W>(args: I, writer: &mut W) -> Result<()>
+pub fn run<I, T, W>(args: I, writer: &mut W) -> Result<()>
 where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
@@ -39,11 +34,11 @@ mod tests {
     fn test_run_inner_parse() {
         let path = "test_run_inner_parse.json";
         let mut file = std::fs::File::create(path).unwrap();
-        writeln!(file, "{{ \"foo\": \"bar\" }}").unwrap();
+        writeln!(file, "{{ \"foo\":\"bar\" }}").unwrap();
 
         let args = vec!["my_app", "--parse", path];
         let mut writer = Vec::new();
-        run_inner(args, &mut writer).unwrap();
+        run(args, &mut writer).unwrap();
 
         let output = String::from_utf8(writer).unwrap();
         assert!(output.contains("\"foo\": \"bar\""));
@@ -59,7 +54,7 @@ mod tests {
 
         let args = vec!["my_app", "--checksum", path];
         let mut writer = Vec::new();
-        run_inner(args, &mut writer).unwrap();
+        run(args, &mut writer).unwrap();
 
         let output = String::from_utf8(writer).unwrap();
         assert!(
