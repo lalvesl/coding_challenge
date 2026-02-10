@@ -1,15 +1,14 @@
 use anyhow::{Context, Result};
 use serde_json::Value;
 use std::fs::File;
-use std::io::{self, BufReader, Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::path::Path;
 
-pub fn process_parse(path: &Path) -> Result<()> {
+pub fn process_parse<W: Write>(path: &Path, writer: &mut W) -> Result<()> {
     let file =
         File::open(path).with_context(|| format!("Failed to open file: {}", path.display()))?;
     let reader = BufReader::new(file);
-    let mut stdout = io::stdout();
-    process_parse_internal(reader, &mut stdout)
+    process_parse_internal(reader, writer)
         .with_context(|| format!("Failed to parse JSON: {}", path.display()))?;
     Ok(())
 }
@@ -45,5 +44,19 @@ mod tests {
         let mut writer = Vec::new();
         let result = process_parse_internal(reader, &mut writer);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_process_parse_file_not_found() {
+        let path = Path::new("non_existent_file.json");
+        let mut writer = Vec::new();
+        let result = process_parse(path, &mut writer);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Failed to open file")
+        );
     }
 }

@@ -38,6 +38,10 @@
           ];
         };
         base_pkgs = default_pkgs ++ [ base_rust_pkgs ];
+
+        mutants_script = pkgs.writeShellScriptBin "mutants" ''
+          ${pkgs.cargo-mutants}/bin/cargo-mutants mutants "$@"
+        '';
       in
       {
         devShells.default = pkgs.mkShell {
@@ -85,7 +89,7 @@
 
         apps.mutants = {
           type = "app";
-          program = "${pkgs.cargo-mutants}/bin/cargo-mutants";
+          program = "${mutants_script}/bin/mutants";
         };
       }
     );

@@ -1,15 +1,14 @@
 use anyhow::{Context, Result};
 use sha2::{Digest, Sha256};
 use std::fs::File;
-use std::io::{self, BufReader, Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::path::Path;
 
-pub fn process_checksum(path: &Path) -> Result<()> {
+pub fn process_checksum<W: Write>(path: &Path, writer: &mut W) -> Result<()> {
     let file =
         File::open(path).with_context(|| format!("Failed to open file: {}", path.display()))?;
     let mut reader = BufReader::new(file);
-    let mut stdout = io::stdout();
-    process_checksum_internal(&mut reader, &path.display().to_string(), &mut stdout)?;
+    process_checksum_internal(&mut reader, &path.display().to_string(), writer)?;
     Ok(())
 }
 
@@ -27,11 +26,9 @@ fn compute_checksum_from_reader<R: Read>(mut reader: R) -> Result<String> {
     let mut hasher = Sha256::new();
     let mut buffer = [0; 1024];
 
-    loop {
-        let count = reader.read(&mut buffer)?;
-        if count == 0 {
-            break;
-        }
+    while let Ok(count) = reader.read(&mut buffer)
+        && count > 0
+    {
         hasher.update(&buffer[..count]);
     }
 
@@ -66,5 +63,19 @@ mod tests {
         let result = String::from_utf8(writer).unwrap();
         let expected_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
         assert_eq!(result, format!("{}  {}\n", expected_hash, path));
+    }
+
+    #[test]
+    fn test_process_checksum_file_not_found() {
+        let path = Path::new("non_existent_file.txt");
+        let mut writer = Vec::new();
+        let result = process_checksum(path, &mut writer);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Failed to open file")
+        );
     }
 }
