@@ -82,6 +82,11 @@
               pkgs.libc
             ];
           };
+
+        apps.mutants = {
+          type = "app";
+          program = "${pkgs.cargo-mutants}/bin/cargo-mutants";
+        };
       }
     );
 }

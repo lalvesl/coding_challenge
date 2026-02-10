@@ -1,17 +1,25 @@
 use anyhow::{Context, Result};
 use sha2::{Digest, Sha256};
-use std::{
-    fs::File,
-    io::{BufReader, Read},
-    path::Path,
-};
+use std::fs::File;
+use std::io::{self, BufReader, Read, Write};
+use std::path::Path;
 
 pub fn process_checksum(path: &Path) -> Result<()> {
     let file =
         File::open(path).with_context(|| format!("Failed to open file: {}", path.display()))?;
     let mut reader = BufReader::new(file);
-    let checksum = compute_checksum_from_reader(&mut reader)?;
-    println!("{checksum}  {}", path.display());
+    let mut stdout = io::stdout();
+    process_checksum_internal(&mut reader, &path.display().to_string(), &mut stdout)?;
+    Ok(())
+}
+
+fn process_checksum_internal<R: Read, W: Write>(
+    reader: R,
+    path_display: &str,
+    mut writer: W,
+) -> Result<()> {
+    let checksum = compute_checksum_from_reader(reader)?;
+    writeln!(writer, "{}  {}", checksum, path_display)?;
     Ok(())
 }
 
@@ -40,21 +48,23 @@ mod tests {
     fn test_checksum_hello() {
         let input = "hello";
         let reader = Cursor::new(input);
-        let result = compute_checksum_from_reader(reader).unwrap();
-        assert_eq!(
-            result,
-            "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
-        );
+        let path = "test_file.txt";
+        let mut writer = Vec::new();
+        process_checksum_internal(reader, path, &mut writer).unwrap();
+        let result = String::from_utf8(writer).unwrap();
+        let expected_hash = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
+        assert_eq!(result, format!("{}  {}\n", expected_hash, path));
     }
 
     #[test]
     fn test_checksum_empty() {
         let input = "";
         let reader = Cursor::new(input);
-        let result = compute_checksum_from_reader(reader).unwrap();
-        assert_eq!(
-            result,
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        );
+        let path = "empty_file";
+        let mut writer = Vec::new();
+        process_checksum_internal(reader, path, &mut writer).unwrap();
+        let result = String::from_utf8(writer).unwrap();
+        let expected_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+        assert_eq!(result, format!("{}  {}\n", expected_hash, path));
     }
 }
