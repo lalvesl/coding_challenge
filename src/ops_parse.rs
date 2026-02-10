@@ -60,3 +60,20 @@ mod tests {
         );
     }
 }
+
+#[cfg(kani)]
+mod verification {
+    use super::*;
+    use std::io::Cursor;
+
+    #[kani::proof]
+    pub fn verify_process_parse() {
+        // Create an arbitrary byte array. Restrict size to avoid state explosion.
+        let input: [u8; 16] = kani::any();
+        let reader = Cursor::new(input);
+        let mut writer = Vec::new(); // In-memory writer
+
+        // Verify it returns Result (Ok or Err) but doesn't panic.
+        let _ = process_parse_internal(reader, &mut writer);
+    }
+}

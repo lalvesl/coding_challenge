@@ -68,3 +68,41 @@ mod tests {
         assert!(result.is_err());
     }
 }
+
+#[cfg(kani)]
+mod verification {
+    use super::*;
+
+    #[kani::proof]
+    pub fn verify_cli_mutex() {
+        // Symbolically choose interactions
+        let enable_parse = kani::any();
+        let enable_checksum = kani::any();
+        let file_arg = "file";
+
+        let mut args = vec!["my_app"];
+        if enable_parse {
+            args.push("--parse");
+        }
+        if enable_checksum {
+            args.push("--checksum");
+        }
+        args.push(file_arg); // Always provide file to satisfy required arg
+
+        let result = Cli::try_parse_from(args);
+
+        if enable_parse && enable_checksum {
+            // Clap should error on conflict
+            assert!(result.is_err());
+        } else if enable_parse || enable_checksum {
+            // Should succeed if one is present (and file is present)
+            assert!(result.is_ok());
+            let cli = result.unwrap();
+            // Verify mutual exclusion in result
+            assert!(!(cli.parse && cli.checksum));
+        } else {
+            // Missing required group "mode"
+            assert!(result.is_err());
+        }
+    }
+}

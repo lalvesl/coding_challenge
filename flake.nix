@@ -42,10 +42,27 @@
         mutants_script = pkgs.writeShellScriptBin "mutants" ''
           ${pkgs.cargo-mutants}/bin/cargo-mutants mutants "$@"
         '';
+
+        kani_script = pkgs.writeShellScriptBin "kani" ''
+          if ! command -v cargo-kani &> /dev/null; then
+            echo "cargo-kani not found. Installing kani-verifier..."
+            cargo install kani-verifier --locked
+          fi
+          # Ensure ~/.cargo/bin is in PATH for this session if not already
+          export PATH="$HOME/.cargo/bin:$PATH"
+          if ! command -v cargo-kani &> /dev/null; then
+             echo "Error: cargo-kani still not found after installation."
+             exit 1
+          fi
+          cargo kani "$@"
+        '';
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = base_pkgs;
+          packages = base_pkgs ++ [
+            pkgs.cbmc
+            pkgs.cbmc-viewer
+          ];
         };
         devShells."stable" =
           let
@@ -59,6 +76,8 @@
           pkgs.mkShell {
             packages = [
               rustpkgs
+              pkgs.cbmc
+              pkgs.cbmc-viewer
             ]
             ++ default_pkgs;
           };
@@ -90,6 +109,11 @@
         apps.mutants = {
           type = "app";
           program = "${mutants_script}/bin/mutants";
+        };
+
+        apps.kani = {
+          type = "app";
+          program = "${kani_script}/bin/kani";
         };
       }
     );

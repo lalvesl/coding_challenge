@@ -85,3 +85,23 @@ mod tests {
         );
     }
 }
+
+#[cfg(kani)]
+mod verification {
+    use super::*;
+    use std::io::Cursor;
+
+    #[kani::proof]
+    pub fn verify_compute_checksum() {
+        // Create an arbitrary byte array of small length to keep verification fast
+        let input: [u8; 16] = kani::any();
+        let reader = Cursor::new(input);
+        let mut writer = Vec::new();
+        let path = "test";
+
+        // Verify it returns Ok (since it's just reading bytes and hashing, errors are unlikely from Cursor)
+        // or at least doesn't panic.
+        let result = process_checksum_internal(reader, path, &mut writer);
+        assert!(result.is_ok());
+    }
+}
