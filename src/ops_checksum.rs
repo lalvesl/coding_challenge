@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use sha2::{Digest, Sha256};
 use std::fs::File;
-use std::io::{BufReader, Read, Write};
+use std::io::{self, BufReader, Read, Write};
 use std::path::Path;
 
 pub fn process_checksum<W: Write>(path: &Path, writer: &mut W) -> Result<()> {
@@ -23,17 +23,27 @@ fn process_checksum_internal<R: Read, W: Write>(
 }
 
 fn compute_checksum_from_reader<R: Read>(mut reader: R) -> Result<String> {
-    let mut hasher = Sha256::new();
-    let mut buffer = [0; 1024];
+    let mut writer = HashWriter {
+        hasher: Sha256::new(),
+    };
+    io::copy(&mut reader, &mut writer)?;
+    let result = writer.hasher.finalize();
+    Ok(hex::encode(result))
+}
 
-    while let Ok(count) = reader.read(&mut buffer)
-        && count > 0
-    {
-        hasher.update(&buffer[..count]);
+struct HashWriter {
+    hasher: Sha256,
+}
+
+impl Write for HashWriter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.hasher.update(buf);
+        Ok(buf.len())
     }
 
-    let result = hasher.finalize();
-    Ok(hex::encode(result))
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
