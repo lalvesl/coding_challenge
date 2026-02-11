@@ -15,7 +15,7 @@ fn test_parse_valid_json() {
 
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
-    // serde_json pretty prints with 2 spaces
+    // Streaming formatter expands top-level
     assert!(stdout.contains(
         r#"{
   "foo": "bar"

@@ -41,6 +41,7 @@ mod tests {
         run(args, &mut writer).unwrap();
 
         let output = String::from_utf8(writer).unwrap();
+        // Streaming formatter expands top-level
         assert!(output.contains("\"foo\": \"bar\""));
 
         std::fs::remove_file(path).unwrap();
