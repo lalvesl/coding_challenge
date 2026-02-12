@@ -1,12 +1,13 @@
 use std::fs;
+use std::path::PathBuf;
 use std::process::Command;
-
-const TEST_DIR: &str = "target/test-data-gen/compat_test_dir";
 
 #[test]
 fn test_sha256sum_compatibility() {
+    let test_dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/compat_test_dir");
     // Iterate over existing files in compat_test_dir
-    let entries = fs::read_dir(TEST_DIR)
+    let entries = fs::read_dir(test_dir)
         .expect("Failed to read compat_test_dir. Did you run 'nix run .#prepare_tests'?");
 
     for entry in entries {

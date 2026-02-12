@@ -1,11 +1,14 @@
 use std::fs;
+use std::path::PathBuf;
 use std::process::Command;
 
 #[test]
 fn test_parse_valid_json() {
-    let input_path = "target/test-data-gen/valid.json";
+    let bin_path = env!("CARGO_BIN_EXE_my_app");
+    let input_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/valid.json");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
+    let output = Command::new(bin_path)
         .arg("--parse")
         .arg(input_path)
         .output()
@@ -19,9 +22,11 @@ fn test_parse_valid_json() {
 
 #[test]
 fn test_parse_invalid_json() {
-    let input_path = "target/test-data-gen/invalid.json";
+    let bin_path = env!("CARGO_BIN_EXE_my_app");
+    let input_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/invalid.json");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
+    let output = Command::new(bin_path)
         .arg("--parse")
         .arg(input_path)
         .output()
@@ -34,30 +39,38 @@ fn test_parse_invalid_json() {
 
 #[test]
 fn test_checksum_valid_file() {
-    let input_path = "target/test-data-gen/checksum.txt";
+    let bin_path = env!("CARGO_BIN_EXE_my_app");
+    let input_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/checksum.txt");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
+    let output = Command::new(bin_path)
         .arg("--checksum")
-        .arg(input_path)
+        .arg(&input_path)
         .output()
         .expect("Failed to execute command");
 
-    assert!(output.status.success());
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8(output.stderr).unwrap()
+    );
     let stdout = String::from_utf8(output.stdout).unwrap();
     // sha256 of "hello"
     assert!(stdout.contains("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"));
-    assert!(stdout.contains(input_path));
+    assert!(stdout.contains(&input_path.display().to_string()));
 }
 
 #[test]
 fn test_file_not_found() {
-    let input_path = "target/test-data-gen/non_existent.txt";
+    let bin_path = env!("CARGO_BIN_EXE_my_app");
+    let input_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/non_existent.txt");
     // Ensure file doesn't exist
-    if std::path::Path::new(input_path).exists() {
-        fs::remove_file(input_path).unwrap();
+    if std::path::Path::new(&input_path).exists() {
+        fs::remove_file(&input_path).unwrap();
     }
 
-    let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
+    let output = Command::new(bin_path)
         .arg("--parse")
         .arg(input_path)
         .output()
@@ -70,10 +83,12 @@ fn test_file_not_found() {
 
 #[test]
 fn test_arg_conflict() {
-    let input_path = "target/test-data-gen/conflict.json";
+    let bin_path = env!("CARGO_BIN_EXE_my_app");
+    let input_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/conflict.json");
     // File exists but is not used specifically for conflict, just needs to be a path
 
-    let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
+    let output = Command::new(bin_path)
         .arg("--parse")
         .arg("--checksum")
         .arg(input_path)
@@ -88,9 +103,11 @@ fn test_arg_conflict() {
 
 #[test]
 fn test_missing_mode() {
-    let input_path = "target/test-data-gen/missing_mode.json";
+    let bin_path = env!("CARGO_BIN_EXE_my_app");
+    let input_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/missing_mode.json");
 
-    let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
+    let output = Command::new(bin_path)
         .arg(input_path)
         .output()
         .expect("Failed to execute command");

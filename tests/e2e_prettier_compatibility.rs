@@ -1,13 +1,17 @@
 use std::fs;
+use std::path::PathBuf;
 use std::process::Command;
 
 #[test]
 fn test_parse_matches_prettier() {
-    let input_path = "target/test-data-gen/large_file.json";
-    let expected_path = "target/test-data-gen/large_file_prettier.json";
+    let input_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/large_file.json");
+    let expected_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("target/test-data-gen/large_file_prettier.json");
 
     // Ensure files exist
-    if !std::path::Path::new(input_path).exists() || !std::path::Path::new(expected_path).exists() {
+    if !std::path::Path::new(&input_path).exists() || !std::path::Path::new(&expected_path).exists()
+    {
         panic!("Test data missing. Please run 'cargo run --bin test-data-gen' first.");
     }
 

@@ -90,7 +90,7 @@
         apps.mutants =
           let
             mutants_script = pkgs.writeShellScriptBin "mutants" ''
-              ${pkgs.cargo-mutants}/bin/cargo-mutants mutants "$@"
+              ${pkgs.cargo-mutants}/bin/cargo-mutants mutants --in-place "$@"
             '';
           in
           {

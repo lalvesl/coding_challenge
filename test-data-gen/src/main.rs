@@ -1,22 +1,25 @@
 use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 fn main() {
     let mut rng = StdRng::seed_from_u64(42);
-    let output_dir = Path::new("target/test-data-gen");
+    let output_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen");
 
     if !output_dir.exists() {
-        fs::create_dir_all(output_dir).expect("Failed to create output directory");
+        fs::create_dir_all(&output_dir).expect("Failed to create output directory");
     }
 
     // e2e_base.rs files
-    create_file_if_missing(output_dir.join("valid.json"), r#"{"foo":"bar"}"#.as_bytes());
-    create_file_if_missing(output_dir.join("invalid.json"), r#"{"foo":}"#.as_bytes());
-    create_file_if_missing(output_dir.join("checksum.txt"), b"hello");
-    create_file_if_missing(output_dir.join("conflict.json"), b"{}");
-    create_file_if_missing(output_dir.join("missing_mode.json"), b"{}");
+    create_file_if_missing(
+        &output_dir.join("valid.json"),
+        r#"{"foo":"bar"}"#.as_bytes(),
+    );
+    create_file_if_missing(&output_dir.join("invalid.json"), r#"{"foo":}"#.as_bytes());
+    create_file_if_missing(&output_dir.join("checksum.txt"), b"hello");
+    create_file_if_missing(&output_dir.join("conflict.json"), b"{}");
+    create_file_if_missing(&output_dir.join("missing_mode.json"), b"{}");
 
     // e2e_unix_compatibility.rs files
     let compat_dir = output_dir.join("compat_test_dir");
@@ -36,7 +39,7 @@ fn main() {
             let mut content = vec![0u8; size];
             rng.fill(&mut content[..]);
 
-            create_file_if_missing(file_path, &content);
+            create_file_if_missing(&file_path, &content);
         }
     } else {
         println!("Compatibility test files already exist, skipping generation.");
@@ -60,7 +63,7 @@ fn main() {
             large_json.truncate(large_json.len() - 2);
         }
         large_json.push_str("\n]");
-        create_file_if_missing(large_json_path.clone(), large_json.as_bytes());
+        create_file_if_missing(&large_json_path, large_json.as_bytes());
 
         // Run prettier on the generated file to create the expected output
         // We run it in-place or output to a new file?
@@ -92,7 +95,7 @@ fn main() {
     println!("Test data generation complete.");
 }
 
-fn create_file_if_missing(path: PathBuf, content: &[u8]) {
+fn create_file_if_missing(path: &PathBuf, content: &[u8]) {
     if path.exists() {
         println!("File {:?} already exists, skipping.", path);
         return;
