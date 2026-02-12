@@ -91,6 +91,7 @@
           let
             mutants_script = pkgs.writeShellScriptBin "mutants" ''
               ${pkgs.cargo-mutants}/bin/cargo-mutants mutants --in-place "$@"
+              rm test_run_inner_*
             '';
           in
           {
