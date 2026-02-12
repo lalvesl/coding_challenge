@@ -22,13 +22,8 @@ fn test_parse_matches_prettier() {
     let stdout = String::from_utf8(output.stdout).expect("Invalid UTF-8");
     let expected = fs::read_to_string(expected_path).expect("Failed to read expected file");
 
-    println!(
-        "stdout: {}",
-        &stdout[(stdout.len() - 5)..stdout.len()]
-            .chars()
-            .map(|c| format!(" {:02x} ", c as u8))
-            .collect::<String>()
+    assert_eq!(
+        stdout, expected,
+        "Output does not match prettier output! See target/test-data-gen/actual_output.json"
     );
-
-    fs::write("target/test-data-gen/actual_output.json", &stdout).ok();
 }

@@ -32,6 +32,7 @@
           libc
           coreutils
           prettier
+          cargo-mutants
         ];
         base_rust_pkgs = pkgs.rust-bin.stable."${rustVersion}".default.override {
           extensions = [
