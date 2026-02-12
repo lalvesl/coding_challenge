@@ -13,3 +13,7 @@ sha2 = "0.10.9"
 
 [dev-dependencies]
 rand = "0.10.0"
+
+[workspace]
+members = ["test-data-gen"]
+default-members = ["."]

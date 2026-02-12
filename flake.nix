@@ -41,9 +41,6 @@
         };
         base_pkgs = default_pkgs ++ [ base_rust_pkgs ];
 
-        mutants_script = pkgs.writeShellScriptBin "mutants" ''
-          ${pkgs.cargo-mutants}/bin/cargo-mutants mutants "$@"
-        '';
       in
       {
         devShells.default = pkgs.mkShell {
@@ -89,10 +86,29 @@
             ];
           };
 
-        apps.mutants = {
-          type = "app";
-          program = "${mutants_script}/bin/mutants";
-        };
+        apps.mutants =
+          let
+            mutants_script = pkgs.writeShellScriptBin "mutants" ''
+              ${pkgs.cargo-mutants}/bin/cargo-mutants mutants "$@"
+            '';
+          in
+          {
+            type = "app";
+            program = "${mutants_script}/bin/mutants";
+          };
+
+        apps."prepare-tests" =
+          let
+            prepare_tests_script = pkgs.writeShellScriptBin "prepare_tests" ''
+              export PATH="${pkgs.lib.makeBinPath base_pkgs}:$PATH"
+              cargo build -p test-data-gen
+              ./target/debug/test-data-gen "$@"
+            '';
+          in
+          {
+            type = "app";
+            program = "${prepare_tests_script}/bin/prepare_tests";
+          };
       }
     );
 }
