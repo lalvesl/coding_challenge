@@ -3,7 +3,7 @@ use std::process::Command;
 
 #[test]
 fn test_parse_valid_json() {
-    let input_path = "target/test-data-generator/valid.json";
+    let input_path = "target/test-data-gen/valid.json";
 
     let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
         .arg("--parse")
@@ -19,7 +19,7 @@ fn test_parse_valid_json() {
 
 #[test]
 fn test_parse_invalid_json() {
-    let input_path = "target/test-data-generator/invalid.json";
+    let input_path = "target/test-data-gen/invalid.json";
 
     let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
         .arg("--parse")
@@ -34,7 +34,7 @@ fn test_parse_invalid_json() {
 
 #[test]
 fn test_checksum_valid_file() {
-    let input_path = "target/test-data-generator/checksum.txt";
+    let input_path = "target/test-data-gen/checksum.txt";
 
     let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
         .arg("--checksum")
@@ -51,7 +51,7 @@ fn test_checksum_valid_file() {
 
 #[test]
 fn test_file_not_found() {
-    let input_path = "target/test-data-generator/non_existent.txt";
+    let input_path = "target/test-data-gen/non_existent.txt";
     // Ensure file doesn't exist
     if std::path::Path::new(input_path).exists() {
         fs::remove_file(input_path).unwrap();
@@ -70,7 +70,7 @@ fn test_file_not_found() {
 
 #[test]
 fn test_arg_conflict() {
-    let input_path = "target/test-data-generator/conflict.json";
+    let input_path = "target/test-data-gen/conflict.json";
     // File exists but is not used specifically for conflict, just needs to be a path
 
     let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
@@ -88,7 +88,7 @@ fn test_arg_conflict() {
 
 #[test]
 fn test_missing_mode() {
-    let input_path = "target/test-data-generator/missing_mode.json";
+    let input_path = "target/test-data-gen/missing_mode.json";
 
     let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
         .arg(input_path)

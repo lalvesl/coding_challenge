@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 fn main() {
     let mut rng = StdRng::seed_from_u64(42);
-    let output_dir = Path::new("target/test-data-generator");
+    let output_dir = Path::new("target/test-data-gen");
 
     if !output_dir.exists() {
         fs::create_dir_all(output_dir).expect("Failed to create output directory");
@@ -24,12 +24,6 @@ fn main() {
         fs::create_dir_all(&compat_dir).expect("Failed to create compat_test_dir");
     }
 
-    // Check if compat dir is empty, if so generate files.
-    // If files exist, we assume they are correct (or acceptable) to avoid re-generating.
-    // The user requirement says "not generate if already exists".
-    // Since these are random files, checking specific filenames is hard unless we regenerate filenames.
-    // But if we regenerate filenames we might as well regenerate content.
-    // Let's check if the directory has any files.
     if fs::read_dir(&compat_dir).unwrap().next().is_none() {
         println!("Generating compatibility test files...");
         for i in 0..10 {
@@ -46,6 +40,53 @@ fn main() {
         }
     } else {
         println!("Compatibility test files already exist, skipping generation.");
+    }
+
+    // Generate large JSON file for prettier compatibility test
+    let large_json_path = output_dir.join("large_file.json");
+    if !large_json_path.exists() {
+        println!("Generating large JSON file...");
+        let mut large_json = String::from("[\n");
+        for i in 0..10000 {
+            large_json.push_str(&format!(
+                "  {{\n    \"id\": {},\n    \"name\": \"item_{}\",\n    \"value\": {}\n  }},\n",
+                i,
+                i,
+                i * 2
+            ));
+        }
+        // Remove trailing comma and newline (handle potentially different length)
+        if large_json.ends_with(",\n") {
+            large_json.truncate(large_json.len() - 2);
+        }
+        large_json.push_str("\n]");
+        create_file_if_missing(large_json_path.clone(), large_json.as_bytes());
+
+        // Run prettier on the generated file to create the expected output
+        // We run it in-place or output to a new file?
+        // User said: "run prettier only run 'prettier' ... use some large json files generated another parsed"
+        // Let's copy it to a new file and run prettier on that
+        let prettier_output_path = output_dir.join("large_file_prettier.json");
+        fs::write(&prettier_output_path, &large_json).expect("Failed to write prettier input file");
+
+        println!(
+            "Running Prettier on {:?}... {}",
+            prettier_output_path,
+            std::path::Path::new(".").canonicalize().unwrap().display()
+        );
+        let status = std::process::Command::new("prettier")
+            .arg("--config")
+            .arg("test-data-gen/.prettierrc")
+            .arg("--write")
+            .arg(&prettier_output_path)
+            .status()
+            .expect("Failed to run prettier");
+
+        if !status.success() {
+            eprintln!("Prettier failed with status: {}", status);
+        }
+    } else {
+        println!("Large JSON file already exists, skipping.");
     }
 
     println!("Test data generation complete.");

@@ -16,7 +16,7 @@ pub fn process_parse<W: Write>(path: &Path, writer: &mut W) -> Result<()> {
 fn process_parse_internal<R: Read, W: Write>(reader: R, mut writer: W) -> Result<()> {
     let v: Value = serde_json::from_reader(reader)?;
     let s = serde_json::to_string_pretty(&v)?;
-    writeln!(writer, "{}", s)?;
+    write!(writer, "{}", s)?;
     Ok(())
 }
 
@@ -33,7 +33,7 @@ mod tests {
         process_parse_internal(reader, &mut writer).unwrap();
         let result = String::from_utf8(writer).unwrap();
         // serde_json::to_string_pretty defaults to 2 spaces indentation
-        let expected = "{\n  \"foo\": \"bar\"\n}\n";
+        let expected = "{\n  \"foo\": \"bar\"\n}";
         assert_eq!(result, expected);
     }
 

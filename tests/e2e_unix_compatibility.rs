@@ -1,7 +1,7 @@
 use std::fs;
 use std::process::Command;
 
-const TEST_DIR: &str = "target/test-data-generator/compat_test_dir";
+const TEST_DIR: &str = "target/test-data-gen/compat_test_dir";
 
 #[test]
 fn test_sha256sum_compatibility() {
