@@ -1,5 +1,5 @@
 {
-  description = "Prost dependencies";
+  description = " dependencies";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -31,6 +31,7 @@
           pkg-config
           libc
           coreutils
+          prettier
         ];
         base_rust_pkgs = pkgs.rust-bin.stable."${rustVersion}".default.override {
           extensions = [

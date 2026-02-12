@@ -16,11 +16,7 @@ fn test_parse_valid_json() {
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     // serde_json pretty prints with 2 spaces
-    assert!(stdout.contains(
-        r#"{
-  "foo": "bar"
-}"#
-    ));
+    assert!(stdout.contains("{\n  \"foo\": \"bar\"\n}"));
 
     fs::remove_file(input_path).unwrap();
 }

@@ -1,3 +1,4 @@
 /target
 /result
 /mutants.out*
+/tests/json_test_dir
