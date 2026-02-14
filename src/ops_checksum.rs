@@ -12,7 +12,7 @@ pub fn process_checksum<W: Write>(path: &Path, writer: &mut W) -> Result<()> {
     Ok(())
 }
 
-fn process_checksum_internal<R: Read, W: Write>(
+pub fn process_checksum_internal<R: Read, W: Write>(
     mut reader: R,
     path_display: &str,
     mut writer: W,

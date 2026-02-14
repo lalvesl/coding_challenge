@@ -19,6 +19,10 @@ criterion = { version = "0.5", features = ["html_reports"] }
 name = "parse_bench"
 harness = false
 
+[[bench]]
+name = "checksum_bench"
+harness = false
+
 [workspace]
 members = ["test-data-gen"]
 default-members = ["."]
