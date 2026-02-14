@@ -33,6 +33,7 @@
           coreutils
           prettier
           cargo-mutants
+          gnuplot
         ];
         base_rust_pkgs = pkgs.rust-bin.stable."${rustVersion}".default.override {
           extensions = [
@@ -81,7 +82,6 @@
             ];
             dontUseCmakeConfigure = true;
             buildInputs = [
-              pkgs.protobuf
               pkgs.curl
               pkgs.libc
             ];

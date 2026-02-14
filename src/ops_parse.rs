@@ -13,7 +13,7 @@ pub fn process_parse<W: Write>(path: &Path, writer: &mut W) -> Result<()> {
     Ok(())
 }
 
-fn process_parse_internal<R: Read, W: Write>(reader: R, mut writer: W) -> Result<()> {
+pub fn process_parse_internal<R: Read, W: Write>(reader: R, mut writer: W) -> Result<()> {
     let v: Value = serde_json::from_reader(reader)?;
     let s = serde_json::to_string_pretty(&v)?;
     write!(writer, "{}", s)?;

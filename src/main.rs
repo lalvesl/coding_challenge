@@ -1,9 +1,5 @@
 use anyhow::Result;
-
-mod cli;
-mod ops_checksum;
-mod ops_parse;
-mod runner;
+use my_app::runner;
 
 fn main() -> Result<()> {
     let mut stdout = std::io::stdout();
