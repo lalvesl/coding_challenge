@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 fn main() {
     let mut rng = StdRng::seed_from_u64(42);
-    let output_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen");
+    let output_dir = PathBuf::from("./target/test-data-gen");
 
     if !output_dir.exists() {
         fs::create_dir_all(&output_dir).expect("Failed to create output directory");
@@ -101,5 +101,5 @@ fn create_file_if_missing(path: &PathBuf, content: &[u8]) {
         return;
     }
     println!("Creating file {:?}...", path);
-    fs::write(&path, content).expect("Failed to write file");
+    fs::write(path, content).expect("Failed to write file");
 }
