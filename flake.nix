@@ -143,9 +143,22 @@
             version = cargoToml.package.version;
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
+            buildInputs = [
+              pkgs.libiconv
+            ];
             target = target;
+            CARGO_BUILD_TARGET = target;
+            cargoBuildFlags = [
+              "--target"
+              target
+            ];
+            installPhase = ''
+              mkdir -p $out/bin
+              cp target/${target}/release/${cargoToml.package.name} $out/bin/
+            '';
             stdenv = crossPkgs.stdenv;
             dontUseCmakeConfigure = true;
+            doCheck = false;
           };
 
         packages.macos-arm =
@@ -166,8 +179,82 @@
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
             target = target;
+            CARGO_BUILD_TARGET = target;
+            cargoBuildFlags = [
+              "--target"
+              target
+            ];
+            installPhase = ''
+              mkdir -p $out/bin
+              cp target/${target}/release/${cargoToml.package.name} $out/bin/
+            '';
             stdenv = crossPkgs.stdenv;
             dontUseCmakeConfigure = true;
+            doCheck = false;
+          };
+
+        packages.linux-arm =
+          let
+            crossPkgs = pkgs.pkgsCross.aarch64-multiplatform;
+            target = "aarch64-unknown-linux-gnu";
+            toolchain = pkgs.rust-bin.stable.${rustVersion}.default.override {
+              targets = [ target ];
+            };
+            myRustPlatform = crossPkgs.makeRustPlatform {
+              cargo = toolchain;
+              rustc = toolchain;
+            };
+          in
+          myRustPlatform.buildRustPackage {
+            pname = "${cargoToml.package.name}-linux-arm";
+            version = cargoToml.package.version;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+            target = target;
+            CARGO_BUILD_TARGET = target;
+            cargoBuildFlags = [
+              "--target"
+              target
+            ];
+            installPhase = ''
+              mkdir -p $out/bin
+              cp target/${target}/release/${cargoToml.package.name} $out/bin/
+            '';
+            stdenv = crossPkgs.stdenv;
+            dontUseCmakeConfigure = true;
+            doCheck = false;
+          };
+
+        packages.linux-x64 =
+          let
+            crossPkgs = pkgs.pkgsCross.gnu64;
+            target = "x86_64-unknown-linux-gnu";
+            toolchain = pkgs.rust-bin.stable.${rustVersion}.default.override {
+              targets = [ target ];
+            };
+            myRustPlatform = crossPkgs.makeRustPlatform {
+              cargo = toolchain;
+              rustc = toolchain;
+            };
+          in
+          myRustPlatform.buildRustPackage {
+            pname = "${cargoToml.package.name}-linux-x64";
+            version = cargoToml.package.version;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+            target = target;
+            CARGO_BUILD_TARGET = target;
+            cargoBuildFlags = [
+              "--target"
+              target
+            ];
+            installPhase = ''
+              mkdir -p $out/bin
+              cp target/${target}/release/${cargoToml.package.name} $out/bin/
+            '';
+            stdenv = crossPkgs.stdenv;
+            dontUseCmakeConfigure = true;
+            doCheck = false;
           };
 
         apps.mutants =
