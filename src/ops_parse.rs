@@ -2,7 +2,6 @@ use anyhow::{Context, Result};
 use serde_json::Value;
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
-use std::path::Path;
 
 use crate::traits::Runnable;
 use clap::Args;
