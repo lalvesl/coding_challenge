@@ -1,5 +1,5 @@
-use crate::ops_checksum::ChecksumCommand;
-use crate::ops_parse::ParseCommand;
+use crate::commands::checksum::ChecksumCommand;
+use crate::commands::parse::ParseCommand;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]

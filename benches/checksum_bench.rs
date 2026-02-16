@@ -1,5 +1,5 @@
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use my_app::ops_checksum::{ChecksumCommand, process_checksum_internal};
+use my_app::commands::checksum::{ChecksumCommand, process_checksum_internal};
 use my_app::traits::Runnable;
 use std::fs;
 use std::io::{Cursor, Sink};

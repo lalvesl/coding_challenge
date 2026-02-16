@@ -1,6 +1,6 @@
 use crate::cli::{Cli, Commands};
-use crate::ops_checksum::ChecksumCommand;
-use crate::ops_parse::ParseCommand;
+use crate::commands::checksum::ChecksumCommand;
+use crate::commands::parse::ParseCommand;
 use crate::traits::Runnable;
 use anyhow::Result;
 use clap::Parser;

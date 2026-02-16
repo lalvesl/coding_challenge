@@ -1,5 +1,5 @@
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use my_app::ops_parse::{ParseCommand, process_parse_internal};
+use my_app::commands::parse::{ParseCommand, process_parse_internal};
 use my_app::traits::Runnable;
 use std::fs;
 use std::io::{Cursor, Sink};
