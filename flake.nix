@@ -87,6 +87,89 @@
             ];
           };
 
+        packages.windows =
+          let
+            crossPkgs = pkgs.pkgsCross.mingwW64;
+            target = "x86_64-pc-windows-gnu";
+            toolchain = pkgs.rust-bin.stable.${rustVersion}.default.override {
+              targets = [ target ];
+            };
+            myRustPlatform = pkgs.makeRustPlatform {
+              cargo = toolchain;
+              rustc = toolchain;
+            };
+          in
+          myRustPlatform.buildRustPackage {
+            pname = "${cargoToml.package.name}-windows";
+            version = cargoToml.package.version;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+            nativeBuildInputs = [
+              crossPkgs.buildPackages.binutils
+              crossPkgs.stdenv.cc
+            ];
+            buildInputs = [
+              crossPkgs.windows.pthreads
+            ];
+            target = target;
+            CARGO_BUILD_TARGET = target;
+            cargoBuildFlags = [
+              "--target"
+              target
+            ];
+            installPhase = ''
+              mkdir -p $out/bin
+              cp target/${target}/release/${cargoToml.package.name}.exe $out/bin/
+            '';
+            stdenv = crossPkgs.stdenv;
+            dontUseCmakeConfigure = true;
+            doCheck = false;
+          };
+
+        packages.macos-intel =
+          let
+            crossPkgs = pkgs.pkgsCross.x86_64-darwin;
+            target = "x86_64-apple-darwin";
+            toolchain = pkgs.rust-bin.stable.${rustVersion}.default.override {
+              targets = [ target ];
+            };
+            myRustPlatform = pkgs.makeRustPlatform {
+              cargo = toolchain;
+              rustc = toolchain;
+            };
+          in
+          myRustPlatform.buildRustPackage {
+            pname = "${cargoToml.package.name}-macos-intel";
+            version = cargoToml.package.version;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+            target = target;
+            stdenv = crossPkgs.stdenv;
+            dontUseCmakeConfigure = true;
+          };
+
+        packages.macos-arm =
+          let
+            crossPkgs = pkgs.pkgsCross.aarch64-darwin;
+            target = "aarch64-apple-darwin";
+            toolchain = pkgs.rust-bin.stable.${rustVersion}.default.override {
+              targets = [ target ];
+            };
+            myRustPlatform = pkgs.makeRustPlatform {
+              cargo = toolchain;
+              rustc = toolchain;
+            };
+          in
+          myRustPlatform.buildRustPackage {
+            pname = "${cargoToml.package.name}-macos-arm";
+            version = cargoToml.package.version;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+            target = target;
+            stdenv = crossPkgs.stdenv;
+            dontUseCmakeConfigure = true;
+          };
+
         apps.mutants =
           let
             mutants_script = pkgs.writeShellScriptBin "mutants" ''

@@ -1,7 +1,8 @@
-use crate::cli::Cli;
-use crate::ops_checksum::process_checksum;
-use crate::ops_parse::process_parse;
-use anyhow::{Context, Result};
+use crate::cli::{Cli, Commands};
+use crate::ops_checksum::ChecksumCommand;
+use crate::ops_parse::ParseCommand;
+use crate::traits::Runnable;
+use anyhow::Result;
 use clap::Parser;
 use std::ffi::OsString;
 use std::io::Write;
@@ -12,13 +13,34 @@ where
     T: Into<OsString> + Clone,
     W: Write,
 {
-    let cli = Cli::try_parse_from(args).context("Failed to parse arguments")?;
+    let cli = match Cli::try_parse_from(args) {
+        Ok(c) => c,
+        Err(e) => {
+            write!(writer, "{}", e.render())?;
+            if e.use_stderr() {
+                return Err(anyhow::Error::msg("Failed to parse arguments"));
+            }
+            return Ok(());
+        }
+    };
 
-    for path in &cli.files {
-        if cli.parse {
-            process_parse(path, writer)?;
-        } else if cli.checksum {
-            process_checksum(path, writer)?;
+    match cli.command {
+        Some(Commands::Parse(cmd)) => cmd.run(writer)?,
+        Some(Commands::Checksum(cmd)) => cmd.run(writer)?,
+        None => {
+            if cli.parse {
+                let cmd = ParseCommand { file: cli.file };
+                cmd.run(writer)?;
+            } else if cli.checksum {
+                let cmd = ChecksumCommand { file: cli.file };
+                cmd.run(writer)?;
+            } else {
+                // If no subcommand and no flag, print help or error
+                // For now, let's print help using clap's mechanism or return an error
+                // Since we don't have easy access to clap's help here without keeping the parser instance,
+                // we'll return an error.
+                anyhow::bail!("No command or flag specified");
+            }
         }
     }
 
@@ -36,7 +58,7 @@ mod tests {
         let mut file = std::fs::File::create(path).unwrap();
         writeln!(file, "{{ \"foo\":\"bar\" }}").unwrap();
 
-        let args = vec!["my_app", "--parse", path];
+        let args = vec!["my_app", "parse", path];
         let mut writer = Vec::new();
         run(args, &mut writer).unwrap();
 
@@ -52,7 +74,7 @@ mod tests {
         let mut file = std::fs::File::create(path).unwrap();
         writeln!(file, "hello").unwrap();
 
-        let args = vec!["my_app", "--checksum", path];
+        let args = vec!["my_app", "checksum", path];
         let mut writer = Vec::new();
         run(args, &mut writer).unwrap();
 

@@ -1,5 +1,6 @@
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use my_app::ops_parse::{process_parse, process_parse_internal};
+use my_app::ops_parse::{ParseCommand, process_parse_internal};
+use my_app::traits::Runnable;
 use std::fs;
 use std::io::{Cursor, Sink};
 use std::path::PathBuf;
@@ -38,7 +39,10 @@ fn bench_parse(c: &mut Criterion) {
     group.bench_function("file_process_parse", |b| {
         b.iter(|| {
             let mut writer = Sink::default();
-            process_parse(&large_file_path, &mut writer).unwrap();
+            let cmd = ParseCommand {
+                file: Some(large_file_path.clone()),
+            };
+            cmd.run(&mut writer).unwrap();
         })
     });
 

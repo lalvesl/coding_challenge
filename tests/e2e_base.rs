@@ -1,6 +1,7 @@
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 #[test]
 fn test_parse_valid_json() {
@@ -9,7 +10,7 @@ fn test_parse_valid_json() {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/valid.json");
 
     let output = Command::new(bin_path)
-        .arg("--parse")
+        .arg("parse")
         .arg(input_path)
         .output()
         .expect("Failed to execute command");
@@ -27,7 +28,7 @@ fn test_parse_invalid_json() {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/invalid.json");
 
     let output = Command::new(bin_path)
-        .arg("--parse")
+        .arg("parse")
         .arg(input_path)
         .output()
         .expect("Failed to execute command");
@@ -44,7 +45,7 @@ fn test_checksum_valid_file() {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/checksum.txt");
 
     let output = Command::new(bin_path)
-        .arg("--checksum")
+        .arg("checksum")
         .arg(&input_path)
         .output()
         .expect("Failed to execute command");
@@ -71,7 +72,7 @@ fn test_file_not_found() {
     }
 
     let output = Command::new(bin_path)
-        .arg("--parse")
+        .arg("parse")
         .arg(input_path)
         .output()
         .expect("Failed to execute command");
@@ -81,25 +82,8 @@ fn test_file_not_found() {
     assert!(stderr.contains("Failed to open file"));
 }
 
-#[test]
-fn test_arg_conflict() {
-    let bin_path = env!("CARGO_BIN_EXE_my_app");
-    let input_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/conflict.json");
-    // File exists but is not used specifically for conflict, just needs to be a path
-
-    let output = Command::new(bin_path)
-        .arg("--parse")
-        .arg("--checksum")
-        .arg(input_path)
-        .output()
-        .expect("Failed to execute command");
-
-    assert!(!output.status.success());
-    // Clap error message for conflict
-    let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains("the argument '--parse' cannot be used with '--checksum'"));
-}
+// test_arg_conflict removed as subcommands logic avoids this specific flag conflict
+// invalid usage like `my_app parse --checksum` would be handled by clap as unexpected argument
 
 #[test]
 fn test_missing_mode() {
@@ -113,7 +97,67 @@ fn test_missing_mode() {
         .expect("Failed to execute command");
 
     assert!(!output.status.success());
-    // Clap error message for required group
+    // Error message from runner.rs
     let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains("the following required arguments were not provided"));
+    assert!(stderr.contains("No command or flag specified"));
+}
+
+#[test]
+fn test_parse_flag_valid_json() {
+    let bin_path = env!("CARGO_BIN_EXE_my_app");
+    let input_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/valid.json");
+
+    let output = Command::new(bin_path)
+        .arg("--parse")
+        .arg(input_path)
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("{\n  \"foo\": \"bar\"\n}"));
+}
+
+#[test]
+fn test_checksum_flag_valid_file() {
+    let bin_path = env!("CARGO_BIN_EXE_my_app");
+    let input_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/checksum.txt");
+
+    let output = Command::new(bin_path)
+        .arg("--checksum")
+        .arg(input_path)
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"));
+}
+
+#[test]
+fn test_pipe_parse_valid() {
+    let bin_path = env!("CARGO_BIN_EXE_my_app");
+    let json = r#"{"foo":"bar"}"#;
+
+    let mut child = Command::new(bin_path)
+        .arg("parse")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Failed to spawn command");
+
+    {
+        let stdin = child.stdin.as_mut().expect("Failed to open stdin");
+        stdin
+            .write_all(json.as_bytes())
+            .expect("Failed to write to stdin");
+    }
+
+    let output = child.wait_with_output().expect("Failed to read output");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("{\n  \"foo\": \"bar\"\n}"));
 }

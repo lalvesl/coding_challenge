@@ -4,13 +4,36 @@ use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use std::path::Path;
 
-pub fn process_parse<W: Write>(path: &Path, writer: &mut W) -> Result<()> {
-    let file =
-        File::open(path).with_context(|| format!("Failed to open file: {}", path.display()))?;
-    let reader = BufReader::new(file);
-    process_parse_internal(reader, writer)
-        .with_context(|| format!("Failed to parse JSON: {}", path.display()))?;
-    Ok(())
+use crate::traits::Runnable;
+use clap::Args;
+use std::path::PathBuf;
+
+#[derive(Args, Debug)]
+pub struct ParseCommand {
+    /// Input file (read from stdin if not provided)
+    #[arg(name = "FILE")]
+    pub file: Option<PathBuf>,
+}
+
+impl Runnable for ParseCommand {
+    fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
+        match &self.file {
+            Some(path) => {
+                let file = File::open(path)
+                    .with_context(|| format!("Failed to open file: {}", path.display()))?;
+                let reader = BufReader::new(file);
+                process_parse_internal(reader, writer)
+                    .with_context(|| format!("Failed to parse JSON: {}", path.display()))?;
+            }
+            None => {
+                let stdin = std::io::stdin();
+                let reader = stdin.lock();
+                process_parse_internal(reader, writer)
+                    .context("Failed to parse JSON from stdin")?;
+            }
+        }
+        Ok(())
+    }
 }
 
 pub fn process_parse_internal<R: Read, W: Write>(reader: R, mut writer: W) -> Result<()> {
@@ -48,9 +71,11 @@ mod tests {
 
     #[test]
     fn test_process_parse_file_not_found() {
-        let path = Path::new("non_existent_file.json");
+        let cmd = ParseCommand {
+            file: Some(PathBuf::from("non_existent_file.json")),
+        };
         let mut writer = Vec::new();
-        let result = process_parse(path, &mut writer);
+        let result = cmd.run(&mut writer);
         assert!(result.is_err());
         assert!(
             result
