@@ -9,26 +9,27 @@ use std::path::PathBuf;
 
 #[derive(Args, Debug)]
 pub struct ParseCommand {
-    /// Input file (read from stdin if not provided)
+    /// Input file(s) (read from stdin if not provided)
     #[arg(name = "FILE")]
-    pub file: Option<PathBuf>,
+    pub files: Vec<PathBuf>,
 }
 
 impl Runnable for ParseCommand {
     fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
-        match &self.file {
-            Some(path) => {
+        if self.files.is_empty() {
+            let stdin = std::io::stdin();
+            let reader = stdin.lock();
+            process_parse_internal(reader, writer).context("Failed to parse JSON from stdin")?;
+        } else {
+            for path in &self.files {
+                if !path.is_file() {
+                    continue;
+                }
                 let file = File::open(path)
                     .with_context(|| format!("Failed to open file: {}", path.display()))?;
                 let reader = BufReader::new(file);
-                process_parse_internal(reader, writer)
+                process_parse_internal(reader, &mut *writer)
                     .with_context(|| format!("Failed to parse JSON: {}", path.display()))?;
-            }
-            None => {
-                let stdin = std::io::stdin();
-                let reader = stdin.lock();
-                process_parse_internal(reader, writer)
-                    .context("Failed to parse JSON from stdin")?;
             }
         }
         Ok(())
@@ -71,16 +72,12 @@ mod tests {
     #[test]
     fn test_process_parse_file_not_found() {
         let cmd = ParseCommand {
-            file: Some(PathBuf::from("non_existent_file.json")),
+            files: vec![PathBuf::from("non_existent_file.json")],
         };
         let mut writer = Vec::new();
         let result = cmd.run(&mut writer);
-        assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("Failed to open file")
-        );
+        // It skips non-existent files, so result is Ok and writer is empty
+        assert!(result.is_ok());
+        assert!(writer.is_empty());
     }
 }

@@ -1,8 +1,6 @@
-use crate::cli::{Cli, Commands};
-use crate::commands::checksum::ChecksumCommand;
-use crate::commands::parse::ParseCommand;
+use crate::cli::Cli;
 use crate::traits::Runnable;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use std::ffi::OsString;
 use std::io::Write;
@@ -24,25 +22,7 @@ where
         }
     };
 
-    match cli.command {
-        Some(Commands::Parse(cmd)) => cmd.run(writer)?,
-        Some(Commands::Checksum(cmd)) => cmd.run(writer)?,
-        None => {
-            if cli.parse {
-                let cmd = ParseCommand { file: cli.file };
-                cmd.run(writer)?;
-            } else if cli.checksum {
-                let cmd = ChecksumCommand { file: cli.file };
-                cmd.run(writer)?;
-            } else {
-                // If no subcommand and no flag, print help or error
-                // For now, let's print help using clap's mechanism or return an error
-                // Since we don't have easy access to clap's help here without keeping the parser instance,
-                // we'll return an error.
-                anyhow::bail!("No command or flag specified");
-            }
-        }
-    }
+    cli.run(writer).context("Command execution failed")?;
 
     Ok(())
 }

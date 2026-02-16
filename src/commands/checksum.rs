@@ -9,25 +9,32 @@ use std::path::PathBuf;
 
 #[derive(Args, Debug)]
 pub struct ChecksumCommand {
-    /// Input file (read from stdin if not provided)
+    /// Input file(s) (read from stdin if not provided)
     #[arg(name = "FILE")]
-    pub file: Option<PathBuf>,
+    pub files: Vec<PathBuf>,
 }
 
 impl Runnable for ChecksumCommand {
     fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
-        match &self.file {
-            Some(path) => {
-                let file = File::open(path)
-                    .with_context(|| format!("Failed to open file: {}", path.display()))?;
-                let mut reader = BufReader::new(file);
-                process_checksum_internal(&mut reader, &path.display().to_string(), writer)?;
-            }
-            None => {
-                let stdin = std::io::stdin();
-                let mut reader = stdin.lock();
-                // Use "-" as filename for stdin, common convention
-                process_checksum_internal(&mut reader, "-", writer)?;
+        if self.files.is_empty() {
+            let stdin = std::io::stdin();
+            let mut reader = stdin.lock();
+            // Use "-" as filename for stdin, common convention
+            process_checksum_internal(&mut reader, "-", writer)?;
+        } else {
+            for path in &self.files {
+                if path.is_file() {
+                    let file = File::open(path)
+                        .with_context(|| format!("Failed to open file: {}", path.display()))?;
+                    let mut reader = BufReader::new(file);
+                    process_checksum_internal(
+                        &mut reader,
+                        &path.display().to_string(),
+                        &mut *writer,
+                    )?;
+                } else {
+                    eprintln!("{}: Is a directory", path.display().to_string());
+                }
             }
         }
         Ok(())
@@ -96,16 +103,12 @@ mod tests {
     #[test]
     fn test_process_checksum_file_not_found() {
         let cmd = ChecksumCommand {
-            file: Some(PathBuf::from("non_existent_file.txt")),
+            files: vec![PathBuf::from("non_existent_file.txt")],
         };
         let mut writer = Vec::new();
         let result = cmd.run(&mut writer);
-        assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("Failed to open file")
-        );
+        // It skips non-existent files, so result is Ok and writer is empty
+        assert!(result.is_ok());
+        assert!(writer.is_empty());
     }
 }

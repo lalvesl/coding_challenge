@@ -36,11 +36,20 @@ fn bench_parse(c: &mut Criterion) {
         })
     });
 
+    group.bench_function("pipe_stdin_parse", |b| {
+        b.iter(|| {
+            let reader = Cursor::new(&content);
+            let mut writer = Sink::default();
+            // Simulate stdin by passing a cursor directly to the internal processing function
+            process_parse_internal(reader, &mut writer).unwrap();
+        })
+    });
+
     group.bench_function("file_process_parse", |b| {
         b.iter(|| {
             let mut writer = Sink::default();
             let cmd = ParseCommand {
-                file: Some(large_file_path.clone()),
+                files: vec![large_file_path.clone()],
             };
             cmd.run(&mut writer).unwrap();
         })

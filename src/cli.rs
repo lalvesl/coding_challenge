@@ -1,6 +1,9 @@
 use crate::commands::checksum::ChecksumCommand;
 use crate::commands::parse::ParseCommand;
+use crate::traits::Runnable;
+use anyhow::{Result, bail};
 use clap::{Parser, Subcommand};
+use std::io::Write;
 
 #[derive(Parser, Debug)]
 #[command(name = "my_app")]
@@ -18,9 +21,32 @@ pub struct Cli {
     #[arg(long, group = "mode")]
     pub checksum: bool,
 
-    /// Input file (optional, used with flags)
+    /// Input file(s) (optional, used with flags)
     #[arg(name = "FILE", global = true)]
-    pub file: Option<std::path::PathBuf>,
+    pub files: Vec<std::path::PathBuf>,
+}
+
+impl Runnable for Cli {
+    fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
+        match &self.command {
+            Some(cmd) => cmd.run(writer),
+            None => {
+                if self.parse {
+                    ParseCommand {
+                        files: self.files.clone(),
+                    }
+                    .run(writer)
+                } else if self.checksum {
+                    ChecksumCommand {
+                        files: self.files.clone(),
+                    }
+                    .run(writer)
+                } else {
+                    bail!("No command or flag specified");
+                }
+            }
+        }
+    }
 }
 
 #[derive(Subcommand, Debug)]
@@ -30,6 +56,15 @@ pub enum Commands {
 
     /// Print the checksum of the file contents
     Checksum(ChecksumCommand),
+}
+
+impl Runnable for Commands {
+    fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
+        match self {
+            Commands::Parse(cmd) => cmd.run(writer),
+            Commands::Checksum(cmd) => cmd.run(writer),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -42,7 +77,7 @@ mod tests {
         let cli = Cli::try_parse_from(args).unwrap();
         match cli.command {
             Some(Commands::Parse(cmd)) => {
-                assert_eq!(cmd.file.unwrap().to_str().unwrap(), "file.json")
+                assert_eq!(cmd.files[0].to_str().unwrap(), "file.json")
             }
             _ => panic!("Expected Parse command"),
         }
@@ -54,7 +89,7 @@ mod tests {
         let cli = Cli::try_parse_from(args).unwrap();
         match cli.command {
             Some(Commands::Checksum(cmd)) => {
-                assert_eq!(cmd.file.unwrap().to_str().unwrap(), "file.txt")
+                assert_eq!(cmd.files[0].to_str().unwrap(), "file.txt")
             }
             _ => panic!("Expected Checksum command"),
         }
@@ -66,7 +101,7 @@ mod tests {
         let cli = Cli::try_parse_from(args).unwrap();
         assert!(cli.parse);
         assert!(!cli.checksum);
-        assert_eq!(cli.file.unwrap().to_str().unwrap(), "file.json");
+        assert_eq!(cli.files[0].to_str().unwrap(), "file.json");
     }
 
     #[test]
@@ -75,7 +110,7 @@ mod tests {
         let cli = Cli::try_parse_from(args).unwrap();
         assert!(!cli.parse);
         assert!(cli.checksum);
-        assert_eq!(cli.file.unwrap().to_str().unwrap(), "file.txt");
+        assert_eq!(cli.files[0].to_str().unwrap(), "file.txt");
     }
 
     #[test]
@@ -85,6 +120,6 @@ mod tests {
         assert!(cli.command.is_none());
         assert!(!cli.parse);
         assert!(!cli.checksum);
-        assert!(cli.file.is_none());
+        assert!(cli.files.is_empty());
     }
 }

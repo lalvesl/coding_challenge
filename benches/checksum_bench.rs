@@ -32,11 +32,20 @@ fn bench_checksum(c: &mut Criterion) {
         })
     });
 
+    group.bench_function("pipe_stdin_checksum", |b| {
+        b.iter(|| {
+            let reader = Cursor::new(&content);
+            let mut writer = Sink::default();
+            // Simulate stdin by passing a cursor ("-") as filename convention
+            process_checksum_internal(reader, "-", &mut writer).unwrap();
+        })
+    });
+
     group.bench_function("file_process_checksum", |b| {
         b.iter(|| {
             let mut writer = Sink::default();
             let cmd = ChecksumCommand {
-                file: Some(large_file_path.clone()),
+                files: vec![large_file_path.clone()],
             };
             cmd.run(&mut writer).unwrap();
         })
