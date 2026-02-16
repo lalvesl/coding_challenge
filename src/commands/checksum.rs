@@ -1,7 +1,6 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use sha2::{Digest, Sha256};
-use std::fs::File;
-use std::io::{self, BufReader, Read, Write};
+use std::io::{self, Read, Write};
 
 use crate::traits::Runnable;
 use clap::Args;
@@ -14,30 +13,14 @@ pub struct ChecksumCommand {
     pub files: Vec<PathBuf>,
 }
 
+use crate::utils::process_inputs;
+// ... imports ...
+
 impl Runnable for ChecksumCommand {
     fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
-        if self.files.is_empty() {
-            let stdin = std::io::stdin();
-            let mut reader = stdin.lock();
-            // Use "-" as filename for stdin, common convention
-            process_checksum_internal(&mut reader, "-", writer)?;
-        } else {
-            for path in &self.files {
-                if path.is_file() {
-                    let file = File::open(path)
-                        .with_context(|| format!("Failed to open file: {}", path.display()))?;
-                    let mut reader = BufReader::new(file);
-                    process_checksum_internal(
-                        &mut reader,
-                        &path.display().to_string(),
-                        &mut *writer,
-                    )?;
-                } else {
-                    eprintln!("{}: Is a directory", path.display().to_string());
-                }
-            }
-        }
-        Ok(())
+        process_inputs(&self.files, writer, |mut reader, path_display, writer| {
+            process_checksum_internal(&mut reader, path_display, writer)
+        })
     }
 }
 

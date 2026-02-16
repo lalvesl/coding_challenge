@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use serde_json::Value;
-use std::fs::File;
-use std::io::{BufReader, Read, Write};
+use std::io::{Read, Write};
 
 use crate::traits::Runnable;
 use clap::Args;
@@ -14,25 +13,15 @@ pub struct ParseCommand {
     pub files: Vec<PathBuf>,
 }
 
+use crate::utils::process_inputs;
+// ... imports ...
+
 impl Runnable for ParseCommand {
     fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
-        if self.files.is_empty() {
-            let stdin = std::io::stdin();
-            let reader = stdin.lock();
-            process_parse_internal(reader, writer).context("Failed to parse JSON from stdin")?;
-        } else {
-            for path in &self.files {
-                if !path.is_file() {
-                    continue;
-                }
-                let file = File::open(path)
-                    .with_context(|| format!("Failed to open file: {}", path.display()))?;
-                let reader = BufReader::new(file);
-                process_parse_internal(reader, &mut *writer)
-                    .with_context(|| format!("Failed to parse JSON: {}", path.display()))?;
-            }
-        }
-        Ok(())
+        process_inputs(&self.files, writer, |reader, path_display, writer| {
+            process_parse_internal(reader, writer)
+                .with_context(|| format!("Failed to parse JSON: {}", path_display))
+        })
     }
 }
 
