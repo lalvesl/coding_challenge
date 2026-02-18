@@ -24,9 +24,9 @@ fn test_parse_matches_prettier() {
     assert!(output.status.success(), "Command failed: {:?}", output);
 
     let stdout = String::from_utf8(output.stdout).expect("Invalid UTF-8");
-    let expected = fs::read_to_string(expected_path).expect("Failed to read expected file");
-
-    fs::write("aaa.json", &stdout).unwrap();
+    let mut expected = fs::read_to_string(expected_path).expect("Failed to read expected file");
+    //remove file ending add by prettier
+    expected.truncate(expected.len() - 1);
 
     assert_eq!(
         stdout, expected,

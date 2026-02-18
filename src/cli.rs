@@ -10,10 +10,6 @@ use crate::arguments::arguments;
 pub struct Cli {}
 
 impl Cli {
-    pub fn run(writer: &mut dyn std::io::Write) -> Result<()> {
-        Self::run_from(std::env::args_os(), writer)
-    }
-
     pub fn run_from<I, T>(args: I, writer: &mut dyn std::io::Write) -> Result<()>
     where
         I: IntoIterator<Item = T>,
@@ -81,7 +77,7 @@ impl Cli {
         // Handle arguments
         let mut found_command = false;
         for arg in &arguments {
-            if matches.contains_id(arg.name()) && matches.indices_of(arg.name()).is_some() {
+            if matches.contains_id(arg.name()) {
                 arg.run(&matches, writer)?;
                 found_command = true;
             }
