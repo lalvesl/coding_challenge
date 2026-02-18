@@ -7,17 +7,17 @@ use crate::traits::CommandArg;
 use crate::utils::process_inputs;
 
 #[derive(Debug, Default)]
-pub struct ParseCommand {
+pub struct ParseArgument {
     pub files: Vec<PathBuf>,
 }
 
-impl ParseCommand {
+impl ParseArgument {
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl CommandArg for ParseCommand {
+impl CommandArg for ParseArgument {
     fn name(&self) -> &'static str {
         "parse"
     }

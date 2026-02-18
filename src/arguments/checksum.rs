@@ -7,17 +7,17 @@ use crate::utils::process_inputs;
 use std::path::PathBuf;
 
 #[derive(Debug, Default)]
-pub struct ChecksumCommand {
+pub struct ChecksumArgument {
     pub files: Vec<PathBuf>,
 }
 
-impl ChecksumCommand {
+impl ChecksumArgument {
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl CommandArg for ChecksumCommand {
+impl CommandArg for ChecksumArgument {
     fn name(&self) -> &'static str {
         "checksum"
     }
