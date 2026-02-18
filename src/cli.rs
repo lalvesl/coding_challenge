@@ -1,125 +1,94 @@
-use crate::commands::checksum::ChecksumCommand;
-use crate::commands::parse::ParseCommand;
-use crate::traits::Runnable;
-use anyhow::{Result, bail};
-use clap::{Parser, Subcommand};
-use std::io::Write;
+use anyhow::Result;
+use clap::{self, Parser};
 
 #[derive(Parser, Debug)]
 #[command(name = "my_app")]
 #[command(version = "0.1.0")]
 #[command(about = "A CLI tool to parse JSON or compute checksums", long_about = None)]
-pub struct Cli {
-    #[command(subcommand)]
-    pub command: Option<Commands>,
+pub struct Cli {}
 
-    /// Parse the file as JSON
-    #[arg(long, group = "mode")]
-    pub parse: bool,
+impl Cli {
+    pub fn run(writer: &mut dyn std::io::Write) -> Result<()> {
+        Self::run_from(std::env::args_os(), writer)
+    }
 
-    /// Calculate the checksum of the file
-    #[arg(long, group = "mode")]
-    pub checksum: bool,
+    pub fn run_from<I, T>(args: I, writer: &mut dyn std::io::Write) -> Result<()>
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<std::ffi::OsString> + Clone,
+    {
+        let commands = crate::commands::commands();
+        let mut app = clap::Command::new("my_app")
+            .version("0.1.0")
+            .about("A CLI tool to parse JSON or compute checksums");
 
-    /// Input file(s) (optional, used with flags)
-    #[arg(name = "FILE", global = true)]
-    pub files: Vec<std::path::PathBuf>,
-}
+        for cmd in &commands {
+            app = app.arg(cmd.build());
+        }
 
-impl Runnable for Cli {
-    fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
-        match &self.command {
-            Some(cmd) => cmd.run(writer),
-            None => {
-                if self.parse {
-                    ParseCommand {
-                        files: self.files.clone(),
-                    }
-                    .run(writer)
-                } else if self.checksum {
-                    ChecksumCommand {
-                        files: self.files.clone(),
-                    }
-                    .run(writer)
-                } else {
-                    bail!("No command or flag specified");
-                }
+        // Add completions command
+        app = app.subcommand(
+            clap::Command::new("completions")
+                .about("Generate shell completions")
+                .arg(
+                    clap::Arg::new("shell")
+                        .value_parser(clap::value_parser!(clap_complete::Shell))
+                        .required(true),
+                ),
+        );
+
+        // Add man command
+        app = app.subcommand(
+            clap::Command::new("man").about("Generate man pages").arg(
+                clap::Arg::new("out_dir")
+                    .short('o')
+                    .long("out")
+                    .value_parser(clap::value_parser!(std::path::PathBuf))
+                    .default_value("."),
+            ),
+        );
+
+        let matches = app.clone().try_get_matches_from(args)?;
+
+        // Handle subcommands first (completions, man)
+        match matches.subcommand() {
+            Some(("completions", sub_matches)) => {
+                let shell = sub_matches
+                    .get_one::<clap_complete::Shell>("shell")
+                    .unwrap();
+                clap_complete::generate(*shell, &mut app, "my_app", writer);
+                return Ok(());
+            }
+            Some(("man", sub_matches)) => {
+                let out_dir = sub_matches
+                    .get_one::<std::path::PathBuf>("out_dir")
+                    .unwrap();
+                std::fs::create_dir_all(out_dir)?;
+                let mut man_file = std::fs::File::create(out_dir.join("my_app.1"))?;
+                clap_mangen::Man::new(app).render(&mut man_file)?;
+                writeln!(
+                    writer,
+                    "Man page generated at {:?}",
+                    out_dir.join("my_app.1")
+                )?;
+                return Ok(());
+            }
+            _ => {}
+        }
+
+        // Handle arguments
+        let mut found_command = false;
+        for cmd in &commands {
+            if matches.contains_id(cmd.name()) && matches.indices_of(cmd.name()).is_some() {
+                cmd.run(&matches, writer)?;
+                found_command = true;
             }
         }
-    }
-}
 
-#[derive(Subcommand, Debug)]
-pub enum Commands {
-    /// Pretty-print parsed JSON
-    Parse(ParseCommand),
-
-    /// Print the checksum of the file contents
-    Checksum(ChecksumCommand),
-}
-
-impl Runnable for Commands {
-    fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
-        match self {
-            Commands::Parse(cmd) => cmd.run(writer),
-            Commands::Checksum(cmd) => cmd.run(writer),
+        if !found_command && matches.subcommand_name().is_none() {
+            anyhow::bail!("No command or flag specified");
         }
-    }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_mode() {
-        let args = vec!["my_app", "parse", "file.json"];
-        let cli = Cli::try_parse_from(args).unwrap();
-        match cli.command {
-            Some(Commands::Parse(cmd)) => {
-                assert_eq!(cmd.files[0].to_str().unwrap(), "file.json")
-            }
-            _ => panic!("Expected Parse command"),
-        }
-    }
-
-    #[test]
-    fn test_checksum_mode() {
-        let args = vec!["my_app", "checksum", "file.txt"];
-        let cli = Cli::try_parse_from(args).unwrap();
-        match cli.command {
-            Some(Commands::Checksum(cmd)) => {
-                assert_eq!(cmd.files[0].to_str().unwrap(), "file.txt")
-            }
-            _ => panic!("Expected Checksum command"),
-        }
-    }
-
-    #[test]
-    fn test_parse_flag() {
-        let args = vec!["my_app", "--parse", "file.json"];
-        let cli = Cli::try_parse_from(args).unwrap();
-        assert!(cli.parse);
-        assert!(!cli.checksum);
-        assert_eq!(cli.files[0].to_str().unwrap(), "file.json");
-    }
-
-    #[test]
-    fn test_checksum_flag() {
-        let args = vec!["my_app", "--checksum", "file.txt"];
-        let cli = Cli::try_parse_from(args).unwrap();
-        assert!(!cli.parse);
-        assert!(cli.checksum);
-        assert_eq!(cli.files[0].to_str().unwrap(), "file.txt");
-    }
-
-    #[test]
-    fn test_no_args_parses_success() {
-        let args = vec!["my_app"];
-        let cli = Cli::try_parse_from(args).unwrap();
-        assert!(cli.command.is_none());
-        assert!(!cli.parse);
-        assert!(!cli.checksum);
-        assert!(cli.files.is_empty());
+        Ok(())
     }
 }

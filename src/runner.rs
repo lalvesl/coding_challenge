@@ -1,7 +1,5 @@
 use crate::cli::Cli;
-use crate::traits::Runnable;
-use anyhow::{Context, Result};
-use clap::Parser;
+use anyhow::Result;
 use std::ffi::OsString;
 use std::io::Write;
 
@@ -11,20 +9,22 @@ where
     T: Into<OsString> + Clone,
     W: Write,
 {
-    let cli = match Cli::try_parse_from(args) {
-        Ok(c) => c,
+    match Cli::run_from(args, writer) {
+        Ok(_) => Ok(()),
         Err(e) => {
-            write!(writer, "{}", e.render())?;
-            if e.use_stderr() {
-                return Err(anyhow::Error::msg("Failed to parse arguments"));
+            // clap errors return Error which can be printed
+            match e.downcast_ref::<clap::Error>() {
+                Some(clap_err) => {
+                    write!(writer, "{}", clap_err.render())?;
+                    if clap_err.use_stderr() {
+                        return Err(anyhow::Error::msg("Failed to parse arguments"));
+                    }
+                    Ok(())
+                }
+                None => Err(e),
             }
-            return Ok(());
         }
-    };
-
-    cli.run(writer).context("Command execution failed")?;
-
-    Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -38,7 +38,7 @@ mod tests {
         let mut file = std::fs::File::create(path).unwrap();
         writeln!(file, "{{ \"foo\":\"bar\" }}").unwrap();
 
-        let args = vec!["my_app", "parse", path];
+        let args = vec!["my_app", "--parse", path];
         let mut writer = Vec::new();
         run(args, &mut writer).unwrap();
 
@@ -54,7 +54,7 @@ mod tests {
         let mut file = std::fs::File::create(path).unwrap();
         writeln!(file, "hello").unwrap();
 
-        let args = vec!["my_app", "checksum", path];
+        let args = vec!["my_app", "--checksum", path];
         let mut writer = Vec::new();
         run(args, &mut writer).unwrap();
 

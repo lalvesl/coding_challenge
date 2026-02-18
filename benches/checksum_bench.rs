@@ -1,6 +1,6 @@
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use my_app::commands::checksum::{ChecksumCommand, process_checksum_internal};
-use my_app::traits::Runnable;
+
+use my_app::commands::checksum::process_checksum_internal;
 use std::fs;
 use std::io::{Cursor, Sink};
 use std::path::PathBuf;
@@ -44,10 +44,15 @@ fn bench_checksum(c: &mut Criterion) {
     group.bench_function("file_process_checksum", |b| {
         b.iter(|| {
             let mut writer = Sink::default();
-            let cmd = ChecksumCommand {
-                files: vec![large_file_path.clone()],
-            };
-            cmd.run(&mut writer).unwrap();
+            let files = vec![large_file_path.clone()];
+            my_app::utils::process_inputs(
+                &files,
+                &mut writer,
+                |mut reader, path_display, writer| {
+                    process_checksum_internal(&mut reader, path_display, writer)
+                },
+            )
+            .unwrap();
         })
     });
 

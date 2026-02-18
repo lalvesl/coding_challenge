@@ -3,9 +3,9 @@ use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use std::path::PathBuf;
 
-pub fn process_inputs<W, F>(files: &[PathBuf], writer: &mut W, f: F) -> Result<()>
+pub fn process_inputs<W, F>(files: &[PathBuf], writer: &mut W, f: F) -> anyhow::Result<()>
 where
-    W: Write,
+    W: Write + ?Sized,
     F: Fn(Box<dyn Read>, &str, &mut W) -> Result<()>,
 {
     if files.is_empty() {

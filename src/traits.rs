@@ -1,7 +1,9 @@
-use anyhow::Result;
-use std::io::Write;
-
-/// A trait for commands that can be run with a writer for output.
-pub trait Runnable {
-    fn run<W: Write>(&self, writer: &mut W) -> Result<()>;
+pub trait CommandArg {
+    fn name(&self) -> &'static str;
+    fn build(&self) -> clap::Arg;
+    fn run(
+        &self,
+        matches: &clap::ArgMatches,
+        writer: &mut dyn std::io::Write,
+    ) -> anyhow::Result<()>;
 }

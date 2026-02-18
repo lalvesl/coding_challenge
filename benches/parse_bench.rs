@@ -1,6 +1,6 @@
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use my_app::commands::parse::{ParseCommand, process_parse_internal};
-use my_app::traits::Runnable;
+
+use my_app::commands::parse::process_parse_internal;
 use std::fs;
 use std::io::{Cursor, Sink};
 use std::path::PathBuf;
@@ -8,16 +8,12 @@ use std::time::Duration;
 
 fn bench_parse(c: &mut Criterion) {
     let mut group = c.benchmark_group("parse");
-    // Ensure we have a long enough measurement time for file I/O
     group.measurement_time(Duration::from_secs(10));
 
     let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let target_dir = project_root.join("target/test-data-gen");
     let large_file_path = target_dir.join("large_file.json");
 
-    // Check if file exists, if not, we might fail or warn.
-    // Ideally we should run test-data-gen before this, but for now let's assume it exists
-    // or panic with a helpful message.
     if !large_file_path.exists() {
         panic!(
             "Test data not found at {:?}. Please run 'cargo run -p test-data-gen' first.",
@@ -48,10 +44,11 @@ fn bench_parse(c: &mut Criterion) {
     group.bench_function("file_process_parse", |b| {
         b.iter(|| {
             let mut writer = Sink::default();
-            let cmd = ParseCommand {
-                files: vec![large_file_path.clone()],
-            };
-            cmd.run(&mut writer).unwrap();
+            let files = vec![large_file_path.clone()];
+            my_app::utils::process_inputs(&files, &mut writer, |reader, _path_display, writer| {
+                my_app::commands::parse::process_parse_internal(reader, writer)
+            })
+            .unwrap();
         })
     });
 

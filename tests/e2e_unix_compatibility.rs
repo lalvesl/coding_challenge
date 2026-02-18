@@ -15,15 +15,12 @@ fn test_sha256sum_compatibility() {
         let entry = entry.unwrap();
         let input_path = entry.path();
 
-        // Skip directories or non-files if any
         if !input_path.is_file() {
             continue;
         }
 
-        // Get strict path string for commands
         let input_path_str = input_path.to_str().unwrap();
 
-        // Run system sha256sum
         let sha256_output = Command::new("sha256sum")
             .arg(input_path_str)
             .output()
@@ -41,7 +38,7 @@ fn test_sha256sum_compatibility() {
 
         // Run my_app
         let my_app_output = Command::new(env!("CARGO_BIN_EXE_my_app"))
-            .arg("checksum")
+            .arg("--checksum")
             .arg(input_path_str)
             .output()
             .expect("Failed to execute my_app");
@@ -70,7 +67,7 @@ fn test_pipe_checksum_valid() {
     let input = "hello";
 
     let mut child = Command::new(bin_path)
-        .arg("checksum")
+        .arg("--checksum")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()

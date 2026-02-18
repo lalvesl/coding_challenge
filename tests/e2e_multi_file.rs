@@ -15,7 +15,7 @@ fn test_parse_multiple_files() {
     writeln!(file, "{{ \"a\": 1 }}").unwrap();
 
     let output = Command::new(bin_path)
-        .arg("parse")
+        .arg("--parse")
         .arg(&valid_json)
         .arg(&other_json)
         .output()
@@ -41,7 +41,7 @@ fn test_checksum_multiple_files() {
     writeln!(file, "other").unwrap();
 
     let output = Command::new(bin_path)
-        .arg("checksum")
+        .arg("--checksum")
         .arg(&checksum_txt)
         .arg(&other_txt)
         .output()
@@ -49,18 +49,6 @@ fn test_checksum_multiple_files() {
 
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
-    // sha256 of "hello\n" (checksum.txt content is usually "hello\n" from generator? No, generator uses writeln so it has newline)
-    // Wait, test-data-gen uses `writeln!(file, "hello")` so specific hash
-    // "hello\n" hash: 5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03 (if it was "hello" without newline: 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824)
-    // Looking at existing test `test_checksum_valid_file`:
-    // It asserts hash `2cf24dba...` which is "hello" (no newline).
-    // Let's verify test-data-gen content.
-    // Ah, `writeln` adds newline. `write` does not.
-    // In `test_run_inner_checksum` in `runner.rs`, it uses `writeln` and expects `5891...`.
-    // In `e2e_base.rs`, `test_checksum_valid_file` expects `2cf2...`.
-    // This discrepancy suggests `test-data-gen` might be writing differently or one test is wrong about expectation vs file content.
-    // Let's assume `test-data-gen` writes "hello" without newline or similar if `e2e_base` passes.
-    // Actually, I'll just check if stdout contains the filename, which confirms it processed the file.
 
     assert!(stdout.contains(&checksum_txt.display().to_string()));
     assert!(stdout.contains(&other_txt.display().to_string()));
@@ -76,7 +64,7 @@ fn test_filter_directories() {
 
     // Pass a directory
     let output = Command::new(bin_path)
-        .arg("checksum")
+        .arg("--checksum")
         .arg(&checksum_txt)
         .arg(&target_dir) // This is a directory, should be skipped
         .output()
@@ -87,13 +75,6 @@ fn test_filter_directories() {
 
     // Should contain checksum of the file
     assert!(stdout.contains(&checksum_txt.display().to_string()));
-    // Should NOT contain directory path (unless checksum happens to match path string which is unlikely)
-    // Actually, `process_checksum_internal` prints path. If it ran for dir, it would fail or print.
-    // Since we skip, it shouldn't be there as a processed item.
-    // But wait, `process_checksum_internal` prints "{checksum}  {path}".
-    // If we skip, nothing is printed for that path.
-    // So distinctively, we shouldn't see an error about "Is a directory" or similar if we were trying to open it.
-    // And strict check: stdout lines count should be 1.
 
     let lines: Vec<&str> = stdout.trim().split('\n').collect();
     assert_eq!(lines.len(), 1, "Expected exactly one line of output");

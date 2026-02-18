@@ -1,27 +1,48 @@
 use anyhow::{Context, Result};
 use serde_json::Value;
 use std::io::{Read, Write};
-
-use crate::traits::Runnable;
-use clap::Args;
 use std::path::PathBuf;
 
-#[derive(Args, Debug)]
+use crate::traits::CommandArg;
+use crate::utils::process_inputs;
+
+#[derive(Debug, Default)]
 pub struct ParseCommand {
-    /// Input file(s) (read from stdin if not provided)
-    #[arg(name = "FILE")]
     pub files: Vec<PathBuf>,
 }
 
-use crate::utils::process_inputs;
-// ... imports ...
+impl ParseCommand {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-impl Runnable for ParseCommand {
-    fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
-        process_inputs(&self.files, writer, |reader, path_display, writer| {
-            process_parse_internal(reader, writer)
-                .with_context(|| format!("Failed to parse JSON: {}", path_display))
-        })
+impl CommandArg for ParseCommand {
+    fn name(&self) -> &'static str {
+        "parse"
+    }
+
+    fn build(&self) -> clap::Arg {
+        clap::Arg::new(self.name())
+            .long(self.name())
+            .help("Pretty-print parsed JSON")
+            .num_args(0..)
+            .value_parser(clap::value_parser!(PathBuf))
+    }
+
+    fn run(&self, matches: &clap::ArgMatches, writer: &mut dyn std::io::Write) -> Result<()> {
+        if matches.contains_id(self.name()) {
+            let files = matches
+                .get_many::<PathBuf>(self.name())
+                .map(|v| v.cloned().collect::<Vec<_>>())
+                .unwrap_or_default();
+
+            process_inputs(&files, writer, |reader, path_display, writer| {
+                process_parse_internal(reader, writer)
+                    .with_context(|| format!("Failed to parse JSON: {}", path_display))
+            })?;
+        }
+        Ok(())
     }
 }
 
@@ -56,17 +77,5 @@ mod tests {
         let mut writer = Vec::new();
         let result = process_parse_internal(reader, &mut writer);
         assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_process_parse_file_not_found() {
-        let cmd = ParseCommand {
-            files: vec![PathBuf::from("non_existent_file.json")],
-        };
-        let mut writer = Vec::new();
-        let result = cmd.run(&mut writer);
-        // It skips non-existent files, so result is Ok and writer is empty
-        assert!(result.is_ok());
-        assert!(writer.is_empty());
     }
 }

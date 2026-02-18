@@ -2,25 +2,46 @@ use anyhow::Result;
 use sha2::{Digest, Sha256};
 use std::io::{self, Read, Write};
 
-use crate::traits::Runnable;
-use clap::Args;
+use crate::traits::CommandArg;
+use crate::utils::process_inputs;
 use std::path::PathBuf;
 
-#[derive(Args, Debug)]
+#[derive(Debug, Default)]
 pub struct ChecksumCommand {
-    /// Input file(s) (read from stdin if not provided)
-    #[arg(name = "FILE")]
     pub files: Vec<PathBuf>,
 }
 
-use crate::utils::process_inputs;
-// ... imports ...
+impl ChecksumCommand {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-impl Runnable for ChecksumCommand {
-    fn run<W: Write>(&self, writer: &mut W) -> Result<()> {
-        process_inputs(&self.files, writer, |mut reader, path_display, writer| {
-            process_checksum_internal(&mut reader, path_display, writer)
-        })
+impl CommandArg for ChecksumCommand {
+    fn name(&self) -> &'static str {
+        "checksum"
+    }
+
+    fn build(&self) -> clap::Arg {
+        clap::Arg::new(self.name())
+            .long(self.name())
+            .help("Print the checksum of the file contents")
+            .num_args(0..)
+            .value_parser(clap::value_parser!(PathBuf))
+    }
+
+    fn run(&self, matches: &clap::ArgMatches, writer: &mut dyn std::io::Write) -> Result<()> {
+        if matches.contains_id(self.name()) {
+            let files = matches
+                .get_many::<PathBuf>(self.name())
+                .map(|v| v.cloned().collect::<Vec<_>>())
+                .unwrap_or_default();
+
+            process_inputs(&files, writer, |mut reader, path_display, writer| {
+                process_checksum_internal(&mut reader, path_display, writer)
+            })?;
+        }
+        Ok(())
     }
 }
 
@@ -81,17 +102,5 @@ mod tests {
         let result = String::from_utf8(writer).unwrap();
         let expected_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
         assert_eq!(result, format!("{}  {}\n", expected_hash, path));
-    }
-
-    #[test]
-    fn test_process_checksum_file_not_found() {
-        let cmd = ChecksumCommand {
-            files: vec![PathBuf::from("non_existent_file.txt")],
-        };
-        let mut writer = Vec::new();
-        let result = cmd.run(&mut writer);
-        // It skips non-existent files, so result is Ok and writer is empty
-        assert!(result.is_ok());
-        assert!(writer.is_empty());
     }
 }

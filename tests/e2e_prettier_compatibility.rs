@@ -16,7 +16,7 @@ fn test_parse_matches_prettier() {
     }
 
     let output = Command::new(env!("CARGO_BIN_EXE_my_app"))
-        .arg("parse")
+        .arg("--parse")
         .arg(input_path)
         .output()
         .expect("Failed to execute command");

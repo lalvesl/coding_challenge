@@ -10,7 +10,7 @@ fn test_parse_valid_json() {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/valid.json");
 
     let output = Command::new(bin_path)
-        .arg("parse")
+        .arg("--parse")
         .arg(input_path)
         .output()
         .expect("Failed to execute command");
@@ -28,7 +28,7 @@ fn test_parse_invalid_json() {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/invalid.json");
 
     let output = Command::new(bin_path)
-        .arg("parse")
+        .arg("--parse")
         .arg(input_path)
         .output()
         .expect("Failed to execute command");
@@ -45,7 +45,7 @@ fn test_checksum_valid_file() {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/checksum.txt");
 
     let output = Command::new(bin_path)
-        .arg("checksum")
+        .arg("--checksum")
         .arg(&input_path)
         .output()
         .expect("Failed to execute command");
@@ -64,12 +64,6 @@ fn test_checksum_valid_file() {
 #[ignore]
 #[test]
 fn test_file_not_found() {
-    // This test relied on specific failure for non-existent file.
-    // Now valid behavior is skipping, so it won't fail with "Failed to open file".
-    // We update it to expect success (exit code 0) but maybe check no output?
-    // Or we just remove/ignore it as `test_filter_directories` covers skipping.
-    // Let's ignore it or adapt.
-    // If I adapt, it becomes:
     let bin_path = env!("CARGO_BIN_EXE_my_app");
     let input_path =
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test-data-gen/non_existent.txt");
@@ -78,7 +72,7 @@ fn test_file_not_found() {
     }
 
     let output = Command::new(bin_path)
-        .arg("parse")
+        .arg("--parse")
         .arg(input_path)
         .output()
         .expect("Failed to execute command");
@@ -89,9 +83,6 @@ fn test_file_not_found() {
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.is_empty());
 }
-
-// test_arg_conflict removed as subcommands logic avoids this specific flag conflict
-// invalid usage like `my_app parse --checksum` would be handled by clap as unexpected argument
 
 #[test]
 fn test_missing_mode() {
@@ -105,9 +96,13 @@ fn test_missing_mode() {
         .expect("Failed to execute command");
 
     assert!(!output.status.success());
-    // Error message from runner.rs
+    // Error message from clap
     let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains("No command or flag specified"));
+    // clap prints "Usage: my_app <COMMAND>" or similar error when subcommand is required
+
+    assert!(
+        stderr.contains("unrecognized subcommand") || stderr.contains("Failed to parse arguments")
+    );
 }
 
 #[test]
@@ -150,7 +145,7 @@ fn test_pipe_parse_valid() {
     let json = r#"{"foo":"bar"}"#;
 
     let mut child = Command::new(bin_path)
-        .arg("parse")
+        .arg("--parse")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
