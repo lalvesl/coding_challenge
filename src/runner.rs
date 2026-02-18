@@ -3,6 +3,14 @@ use anyhow::Result;
 use std::ffi::OsString;
 use std::io::Write;
 
+/// Runs the application with the given arguments.
+///
+/// This is a convenience wrapper around `Cli::run_from`.
+///
+/// # Arguments
+///
+/// * `args` - Command line arguments.
+/// * `writer` - Output writer.
 pub fn run<I, T, W>(args: I, writer: &mut W) -> Result<()>
 where
     I: IntoIterator<Item = T>,

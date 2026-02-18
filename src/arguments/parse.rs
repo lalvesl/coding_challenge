@@ -6,12 +6,15 @@ use std::path::PathBuf;
 use crate::traits::CommandArg;
 use crate::utils::process_inputs;
 
+/// Argument handler for the parse command.
 #[derive(Debug, Default)]
 pub struct ParseArgument {
+    /// List of files to process.
     pub files: Vec<PathBuf>,
 }
 
 impl ParseArgument {
+    /// Creates a new `ParseArgument`.
     pub fn new() -> Self {
         Self::default()
     }
@@ -46,6 +49,14 @@ impl CommandArg for ParseArgument {
     }
 }
 
+/// Parses JSON from the input and pretty-prints it.
+///
+/// Uses `serde-transcode` to stream data from reader to writer without buffering the entire content.
+///
+/// # Arguments
+///
+/// * `reader` - Input reader.
+/// * `writer` - Output writer.
 pub fn process_parse_internal<R: Read, W: Write>(reader: R, writer: W) -> Result<()> {
     let mut deserializer = serde_json::Deserializer::from_reader(reader);
     let mut serializer = serde_json::Serializer::pretty(writer);

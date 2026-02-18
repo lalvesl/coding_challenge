@@ -3,6 +3,7 @@ use clap::{self, Parser};
 
 use crate::arguments::arguments;
 
+/// The main CLI entry point.
 #[derive(Parser, Debug)]
 #[command(name = "my_app")]
 #[command(version = "0.1.0")]
@@ -10,6 +11,12 @@ use crate::arguments::arguments;
 pub struct Cli {}
 
 impl Cli {
+    /// Parses arguments and runs the appropriate command.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - An iterator over the command line arguments.
+    /// * `writer` - A writer to capture output (e.g., stdout).
     pub fn run_from<I, T>(args: I, writer: &mut dyn std::io::Write) -> Result<()>
     where
         I: IntoIterator<Item = T>,

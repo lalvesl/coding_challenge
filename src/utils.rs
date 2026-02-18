@@ -3,6 +3,13 @@ use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use std::path::PathBuf;
 
+/// Processes a list of input files or stdin if no files are provided.
+///
+/// # Arguments
+///
+/// * `files` - A list of file paths. If empty, reads from stdin.
+/// * `writer` - Output writer.
+/// * `f` - A closure that processes each input stream.
 pub fn process_inputs<W, F>(files: &[PathBuf], writer: &mut W, f: F) -> anyhow::Result<()>
 where
     W: Write + ?Sized,

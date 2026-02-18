@@ -6,12 +6,15 @@ use crate::traits::CommandArg;
 use crate::utils::process_inputs;
 use std::path::PathBuf;
 
+/// Argument handler for the checksum command.
 #[derive(Debug, Default)]
 pub struct ChecksumArgument {
+    /// List of files to process.
     pub files: Vec<PathBuf>,
 }
 
 impl ChecksumArgument {
+    /// Creates a new `ChecksumArgument`.
     pub fn new() -> Self {
         Self::default()
     }
@@ -45,6 +48,13 @@ impl CommandArg for ChecksumArgument {
     }
 }
 
+/// Computes the SHA256 checksum of the input and prints it.
+///
+/// # Arguments
+///
+/// * `reader` - Input reader.
+/// * `path_display` - Display string for the input path (or "-" for stdin).
+/// * `writer` - Output writer.
 pub fn process_checksum_internal<R: Read, W: Write>(
     mut reader: R,
     path_display: &str,
