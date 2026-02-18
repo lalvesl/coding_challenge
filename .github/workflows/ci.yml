@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches: [ "main" ]
-    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -66,32 +65,3 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
     - name: Build
       run: nix build .#${{ matrix.target }}
-    - name: Prepare Artifact
-      run: |
-        mkdir -p artifacts
-        if [ "${{ matrix.target }}" == "windows" ]; then
-          cp result/bin/my_app.exe artifacts/my_app-${{ matrix.target }}.exe
-        else
-          cp result/bin/my_app artifacts/my_app-${{ matrix.target }}
-        fi
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: my_app-${{ matrix.target }}
-        path: artifacts/*
-
-  release:
-    name: Release
-    needs: builds
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-    - uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-        pattern: my_app-*
-        merge-multiple: true
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: artifacts/*
