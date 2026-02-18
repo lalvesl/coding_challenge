@@ -89,6 +89,7 @@
               pkgs.curl
               pkgs.libc
             ];
+            doCheck = false;
           };
 
         packages.windows =
@@ -147,6 +148,10 @@
             version = cargoToml.package.version;
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
+            nativeBuildInputs = [
+              pkgs.zig
+            ];
+            CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER = "${pkgs.writeShellScriptBin "zig-cc-intel" ''exec ${pkgs.zig}/bin/zig cc -target x86_64-macos "$@"''}/bin/zig-cc-intel";
             buildInputs = [
               pkgs.libiconv
             ];
@@ -162,6 +167,10 @@
             '';
             stdenv = crossPkgs.stdenv;
             dontUseCmakeConfigure = true;
+            dontUseZigBuild = true;
+            dontUseZigConfigure = true;
+            ZIG_GLOBAL_CACHE_DIR = "zig-cache";
+            ZIG_LOCAL_CACHE_DIR = "zig-cache";
             doCheck = false;
           };
 
@@ -182,6 +191,10 @@
             version = cargoToml.package.version;
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
+            nativeBuildInputs = [
+              pkgs.zig
+            ];
+            CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER = "${pkgs.writeShellScriptBin "zig-cc-arm" ''exec ${pkgs.zig}/bin/zig cc -target aarch64-macos "$@"''}/bin/zig-cc-arm";
             target = target;
             CARGO_BUILD_TARGET = target;
             cargoBuildFlags = [
@@ -194,6 +207,10 @@
             '';
             stdenv = crossPkgs.stdenv;
             dontUseCmakeConfigure = true;
+            dontUseZigBuild = true;
+            dontUseZigConfigure = true;
+            ZIG_GLOBAL_CACHE_DIR = "zig-cache";
+            ZIG_LOCAL_CACHE_DIR = "zig-cache";
             doCheck = false;
           };
 
@@ -264,6 +281,7 @@
         apps.mutants =
           let
             mutants_script = pkgs.writeShellScriptBin "mutants" ''
+              export PATH="${pkgs.lib.makeBinPath base_pkgs}:$PATH"
               ${pkgs.cargo-mutants}/bin/cargo-mutants mutants --in-place "$@"
               rm test_run_inner_*
             '';

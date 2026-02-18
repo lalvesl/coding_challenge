@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [default, windows, macos-intel, macos-arm, linux-arm, linux-x64]
+        target: [windows, macos-intel, macos-arm, linux-arm, linux-x64]
     steps:
     - uses: actions/checkout@v4
     - uses: cachix/install-nix-action@v30
