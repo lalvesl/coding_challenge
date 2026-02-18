@@ -23,11 +23,7 @@ impl CommandArg for ChecksumCommand {
     }
 
     fn build(&self) -> clap::Arg {
-        clap::Arg::new(self.name())
-            .long(self.name())
-            .help("Print the checksum of the file contents")
-            .num_args(0..)
-            .value_parser(clap::value_parser!(PathBuf))
+        Default::default() /* ~ changed by cargo-mutants ~ */
     }
 
     fn run(&self, matches: &clap::ArgMatches, writer: &mut dyn std::io::Write) -> Result<()> {

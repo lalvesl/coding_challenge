@@ -40,6 +40,7 @@ jobs:
 
   mutants:
     name: Mutation Tests
+    needs: check-and-test
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -47,10 +48,11 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - name: Run Mutants
-      run: nix develop --command 'cargo mutants --in-place'
+      run: nix develop --command cargo mutants --in-place
 
   builds:
     name: Build ${{ matrix.target }}
+    needs: mutants
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
