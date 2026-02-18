@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use serde_json::Value;
+
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
@@ -46,10 +46,10 @@ impl CommandArg for ParseCommand {
     }
 }
 
-pub fn process_parse_internal<R: Read, W: Write>(reader: R, mut writer: W) -> Result<()> {
-    let v: Value = serde_json::from_reader(reader)?;
-    let s = serde_json::to_string_pretty(&v)?;
-    write!(writer, "{}", s)?;
+pub fn process_parse_internal<R: Read, W: Write>(reader: R, writer: W) -> Result<()> {
+    let mut deserializer = serde_json::Deserializer::from_reader(reader);
+    let mut serializer = serde_json::Serializer::pretty(writer);
+    serde_transcode::transcode(&mut deserializer, &mut serializer)?;
     Ok(())
 }
 
