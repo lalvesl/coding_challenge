@@ -1,6 +1,5 @@
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-
-use my_app::commands::checksum::process_checksum_internal;
+use my_app::arguments::checksum::process_checksum_internal;
 use std::fs;
 use std::io::{Cursor, Sink};
 use std::path::PathBuf;

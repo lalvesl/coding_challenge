@@ -1,6 +1,5 @@
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-
-use my_app::commands::parse::process_parse_internal;
+use my_app::arguments::parse::process_parse_internal;
 use std::fs;
 use std::io::{Cursor, Sink};
 use std::path::PathBuf;
@@ -46,7 +45,7 @@ fn bench_parse(c: &mut Criterion) {
             let mut writer = Sink::default();
             let files = vec![large_file_path.clone()];
             my_app::utils::process_inputs(&files, &mut writer, |reader, _path_display, writer| {
-                my_app::commands::parse::process_parse_internal(reader, writer)
+                process_parse_internal(reader, writer)
             })
             .unwrap();
         })

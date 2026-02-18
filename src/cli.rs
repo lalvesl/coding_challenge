@@ -1,6 +1,8 @@
 use anyhow::Result;
 use clap::{self, Parser};
 
+use crate::arguments::arguments;
+
 #[derive(Parser, Debug)]
 #[command(name = "my_app")]
 #[command(version = "0.1.0")]
@@ -17,7 +19,7 @@ impl Cli {
         I: IntoIterator<Item = T>,
         T: Into<std::ffi::OsString> + Clone,
     {
-        let commands = crate::commands::commands();
+        let commands = arguments();
         let mut app = clap::Command::new("my_app")
             .version("0.1.0")
             .about("A CLI tool to parse JSON or compute checksums");
