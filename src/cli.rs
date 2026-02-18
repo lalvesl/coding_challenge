@@ -19,13 +19,13 @@ impl Cli {
         I: IntoIterator<Item = T>,
         T: Into<std::ffi::OsString> + Clone,
     {
-        let commands = arguments();
+        let arguments = arguments();
         let mut app = clap::Command::new("my_app")
             .version("0.1.0")
             .about("A CLI tool to parse JSON or compute checksums");
 
-        for cmd in &commands {
-            app = app.arg(cmd.build());
+        for arg in &arguments {
+            app = app.arg(arg.build());
         }
 
         // Add completions command
@@ -80,9 +80,9 @@ impl Cli {
 
         // Handle arguments
         let mut found_command = false;
-        for cmd in &commands {
-            if matches.contains_id(cmd.name()) && matches.indices_of(cmd.name()).is_some() {
-                cmd.run(&matches, writer)?;
+        for arg in &arguments {
+            if matches.contains_id(arg.name()) && matches.indices_of(arg.name()).is_some() {
+                arg.run(&matches, writer)?;
                 found_command = true;
             }
         }

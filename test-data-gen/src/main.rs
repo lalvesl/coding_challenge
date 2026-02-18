@@ -49,26 +49,20 @@ fn main() {
     let large_json_path = output_dir.join("large_file.json");
     if !large_json_path.exists() {
         println!("Generating large JSON file...");
-        let mut large_json = String::from("[\n");
-        for i in 0..10000 {
+        let mut large_json = String::from("[");
+        for i in 0..100000 {
             large_json.push_str(&format!(
-                "  {{\n    \"id\": {},\n    \"name\": \"item_{}\",\n    \"value\": {}\n  }},\n",
+                "{{\"id\":{},\"name\":\"item_{}\",\"value\":{}}},",
                 i,
                 i,
                 i * 2
             ));
         }
-        // Remove trailing comma and newline (handle potentially different length)
-        if large_json.ends_with(",\n") {
-            large_json.truncate(large_json.len() - 2);
-        }
-        large_json.push_str("\n]");
+
+        large_json.truncate(large_json.len() - 1);
+        large_json.push_str("]");
         create_file_if_missing(&large_json_path, large_json.as_bytes());
 
-        // Run prettier on the generated file to create the expected output
-        // We run it in-place or output to a new file?
-        // User said: "run prettier only run 'prettier' ... use some large json files generated another parsed"
-        // Let's copy it to a new file and run prettier on that
         let prettier_output_path = output_dir.join("large_file_prettier.json");
         fs::write(&prettier_output_path, &large_json).expect("Failed to write prettier input file");
 
@@ -80,6 +74,7 @@ fn main() {
         let status = std::process::Command::new("prettier")
             .arg("--config")
             .arg("test-data-gen/.prettierrc")
+            .arg("--ignore-path")
             .arg("--write")
             .arg(&prettier_output_path)
             .status()
