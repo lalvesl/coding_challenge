@@ -47,6 +47,10 @@
       {
         devShells.default = pkgs.mkShell {
           packages = base_pkgs;
+          shellHook = ''
+            cargo build -p test-data-gen
+            ./target/debug/test-data-gen "$@"
+          '';
         };
         devShells."stable" =
           let

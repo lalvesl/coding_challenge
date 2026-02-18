@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  check-and-test:
+    name: Check, Test, and Bench
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: cachix/install-nix-action@v30
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - name: Clippy
+      run: nix develop --command cargo clippy -- -D warnings
+    - name: Test
+      run: nix develop --command cargo test
+    - name: Bench
+      run: nix develop --command cargo bench
+    - name: Upload Criterion Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: criterion-report
+        path: target/criterion
+
+#   msrv:
+#     name: MSRV Check
+#     runs-on: ubuntu-latest
+#     steps:
+#     - uses: actions/checkout@v4
+#     - uses: cachix/install-nix-action@v30
+#       with:
+#         nix_path: nixpkgs=channel:nixos-unstable
+#     - name: Verify MSRV
+#       run: nix develop .#stable --command cargo check
+
+  mutants:
+    name: Mutation Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: cachix/install-nix-action@v30
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - name: Run Mutants
+      run: nix run .#mutants
+
+  builds:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [default, windows, macos-intel, macos-arm, linux-arm, linux-x64]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: cachix/install-nix-action@v30
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - name: Build
+      run: nix build .#${{ matrix.target }}
